@@ -1,13 +1,11 @@
-from PIL import Image
-from PIL.Image import Transpose
 import pygame
 from OpenGL.GL import *
 from ctypes import c_void_p
 import numpy
 import glm
 from math import *
-import threading
 
+#The problematic code is somewhere in this function.
 class Model:
     def __init__(self, ObjFilePath, TexFilePath,ID,shaderID = 0):
         self.objMatrix = glm.mat4(1)
@@ -27,17 +25,21 @@ class Model:
         indexdata = []
         alreadymadevertdata = []
 
+        #Reads all of the verticies, normals, faces, and texture coords in the .obj file and then stores them in the vertex and index data lists.
         for databit in objData:
+
+            #Stores sets of texture coords into a temporary array.
             if databit.startswith("vt"):
                 print(f"{ID}: {databit}")
                 databitlist = databit.split(' ')[1:]
                 print(databitlist)
                 databitlistconverted = []
-                databitlistconverted.append(float(databitlist[0]))
-                databitlistconverted.append(1-float(databitlist[1]))
+                for value in databitlist:
+                    databitlistconverted.append(float(value))
                 print(databitlistconverted)
                 texpos.append(databitlistconverted)
 
+            #Stores a list of normals into a temporary array.
             elif databit.startswith('vn'):
                 databitlist = databit.split(' ')[1:]
                 databitlistconverted = []
@@ -45,6 +47,7 @@ class Model:
                     databitlistconverted.append(float(value))
                 normpos.append(databitlistconverted)
 
+            #Stors a list of coordinates into a temporary array.
             elif databit.startswith("v"):
                 databitlist = databit.split(' ')[1:]
                 databitlistconverted = []
@@ -52,6 +55,7 @@ class Model:
                     databitlistconverted.append(float(value))
                 vertpos.append(databitlistconverted)
 
+            #This part takes the temporary list of the three vertex, normal, and tex coord lists, from the previous three loops and then puts them into a vertex array
             elif databit.startswith('f'):
                 databitlist = databit.split()[1:]
                 for face in databitlist:
@@ -65,36 +69,44 @@ class Model:
                         try:
                             for norm in normpos[int(indexes[1]) - 1]:
                                 vertexdata.append(norm)
+                        #If the normal value is blank, it will fill the spaces with blank values
                         except:
                             vertexdata.append(0.0)
                             vertexdata.append(0.0)
                             vertexdata.append(0.0)
+                            print(f"Tex normal for face {databitlist} was not found.")
                         try:
                             for tex in texpos[int(indexes[2]) - 1][:2]:
                                 vertexdata.append(tex)
                         except:
                             vertexdata.append(0.0)
                             vertexdata.append(0.0)
+                            print(f"Tex coord data for face {databitlist} was not found.")
                         indexdata.append(maxindex)
                         maxindex += 1
                     else:
                         indexdata.append(alreadymadevertdata.index(face))
 
+        #Converts the vertex and index arrays to a usable format.
         self.__vertexdata = numpy.array(vertexdata,dtype=numpy.float32)
         self.__indexdata = numpy.array(indexdata,dtype=numpy.uint32)
 
+        #Generates the texture.
         self.texture = glGenTextures(1)
         glBindTexture(GL_TEXTURE_2D, self.texture)
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE)
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE)
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
-        textureData = Image.open(TexFilePath)
-        image_width, image_height = textureData.size
-        image = textureData.convert("RGBA").transpose(Transpose.FLIP_TOP_BOTTOM).tobytes()
+        textureData = pygame.image.load(TexFilePath).convert_alpha()
+        #Flips the texture, for some reason pygame loads them in upside down so this needs to happen
+        pygame.transform.flip(textureData,False,True)
+        image_width, image_height = textureData.get_rect().size
+        image = pygame.image.tobytes(textureData,"RGBA")
         glTexImage2D(GL_TEXTURE_2D,0,GL_RGBA,image_width,image_height,0,GL_RGBA,GL_UNSIGNED_BYTE,image)
         glGenerateMipmap(GL_TEXTURE_2D)
 
+    #A function to call to prepare the texture to be drawn.
     def bindTexture(self):
         glActiveTexture(GL_TEXTURE0)
         glBindTexture(GL_TEXTURE_2D,self.texture)
@@ -105,6 +117,8 @@ class Model:
         return self.__indexdata
     def getShader(self):
         return self.__shaderID
+
+#This is the end of the problematic funcion. The isse may also be in the main Program() class
 
 class Skybox:
     def __init__(self, texturepath,ID):
@@ -272,6 +286,7 @@ class Camera:
         for model in scenemodeldata:
             self.drawObj(model)
 
+    #Draws a given object to the screen. (NOTE: this function takes multiple different classes as input)
     def drawObj(self,object):
         worldMatrix = glm.lookAt(glm.vec3(self.position),glm.vec3(self.position+self.direction),glm.vec3(self.up))
         vertexdata = object.getVertexData()
@@ -319,9 +334,9 @@ class Camera:
             glUniform1i(glGetUniformLocation(self.starshipShader, 'skyboxTexture'), 0)
 
 
-
         glDrawElements(GL_TRIANGLES, len(indexdata), GL_UNSIGNED_INT, None)
 
+    #Calculates camera movement, Very crude as of right now
     def updateCamera(self,deltaTime):
         if pygame.mouse.get_pos() != (0,0) and pygame.mouse.get_pos() != (self.screensize[0]//2,self.screensize[1]//2):
             mx, my = ((pygame.mouse.get_pos()[0] / self.screensize[0]) - .5)*2, ((pygame.mouse.get_pos()[1] / self.screensize[1]) - .5)*2
@@ -332,13 +347,13 @@ class Camera:
             self.direction *= glm.rotate(self.mx/10,(0,1,0))
 
         if pygame.key.get_pressed()[pygame.K_w]:
-            self.position.z += 1/30
+            self.position.z += 1/30*deltaTime
         if pygame.key.get_pressed()[pygame.K_s]:
-            self.position.z -= 1/30
+            self.position.z -= 1/30*deltaTime
         if pygame.key.get_pressed()[pygame.K_a]:
-            self.position.x += 1/30
+            self.position.x += 1/30*deltaTime
         if pygame.key.get_pressed()[pygame.K_d]:
-            self.position.x -= 1/30
+            self.position.x -= 1/30*deltaTime
 
 
 
@@ -354,19 +369,17 @@ class Program:
         self.userhasquit = False
         self.maincam = Camera(45)
 
-        self.models.append(Model("levelobjects/Sword.obj", "levelobjects/texturedata/Sword.png","sword-model"))
+        #Loads actors into a list of objects to be drawn to the screen.
         self.models.append(Model("levelobjects/AvaxInterceptor.obj", "levelobjects/texturedata/AvaxInterceptorColourMap.png", "ship-model"))
         self.models.append(Skybox("skybox","space-skybox"))
 
-
-        self.models[0].objMatrix = glm.scale(self.models[0].objMatrix,(.002,.002,.002))
-        self.models[0].objMatrix = glm.translate(self.models[0].objMatrix,(0,0,5))
-
+        #This is an error colour to show if something was not dran, this should ideally never be seen on the screen.
         glClearColor(1.0, 0.0, 1.0, 1)
 
         while not self.userhasquit:
             events = pygame.event.get()
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
+            #The code below rotates the object in accordance with delta time, it has been disabled for debugging
             #self.models[0].objMatrix *= glm.rotate((1/60)*self.deltaTime,(0,1,0))
 
             for event in events:
@@ -374,8 +387,12 @@ class Program:
                     self.userhasquit = True
                     break
 
+            #Updates the cameras position based on userinput
+            #NOTE as of this stage userinput is crude. Movement directions to not account for the look direction.
             self.maincam.updateCamera(self.deltaTime)
+            #This function loops through all of the objects in the prop list and draws them with the drawObj() function
             self.maincam.renderScene(self.models)
+
             pygame.display.flip()
             self.__clock.tick(60)
             if (self.__clock.get_fps()/60) != 0:
