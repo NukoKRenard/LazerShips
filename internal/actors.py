@@ -42,7 +42,7 @@ class ActorTemplate:
         pass
 
 class StarShipTemplate(ActorTemplate):
-    def __init__(self, starshipCostume,minSpeed=0,maxSpeed=1/20,maxrotatespeed = 1/10,startMatrix = glm.mat4(1)):
+    def __init__(self, starshipCostume,minSpeed=0,maxSpeed=1/20,maxrotatespeed = 1/60,startMatrix = glm.mat4(1)):
         ActorTemplate.__init__(self,starshipCostume,startMatrix)
 
         self.speedMin = minSpeed
@@ -61,9 +61,9 @@ class StarShipTemplate(ActorTemplate):
         self.ID = self.costume.ID
 
     def flightcontroll(self,thrustvector,rotationvector):
-        self.strafeSpeed += thrustvector.x*(1/(self.speedMax*100000))
-        self.hoverSpeed += thrustvector.x*(1/(self.speedMax*100000))
-        self.forwardSpeed += thrustvector.x*(1/(self.speedMax*100000))
+        self.strafeSpeed += thrustvector.x*(1/(self.speedMax*10000))
+        self.hoverSpeed += thrustvector.y*(1/(self.speedMax*10000))
+        self.forwardSpeed += thrustvector.z*(1/(self.speedMax*10000))
 
         if self.forwardSpeed > self.speedMax:
             self.forwardSpeed = self.speedMax
@@ -80,9 +80,9 @@ class StarShipTemplate(ActorTemplate):
         elif self.hoverSpeed < -self.speedMax / 3:
             self.hoverSpeed = -self.speedMax / 3
 
-        self.pitchSpeed += rotationvector.x*(1/(self.maxRotationSpeed*100000))
-        self.yawSpeed += rotationvector.y*(1/(self.maxRotationSpeed*100000))
-        self.rollSpeed += rotationvector.z*(1/(self.maxRotationSpeed*100000))
+        self.pitchSpeed += rotationvector.x*(1/(self.maxRotationSpeed*10000))
+        self.yawSpeed += rotationvector.y*(1/(self.maxRotationSpeed*10000))
+        self.rollSpeed += rotationvector.z*(1/(self.maxRotationSpeed*10000))
 
         if self.pitchSpeed > self.maxRotationSpeed:
             self.pitchSpeed = self.maxRotationSpeed
@@ -103,13 +103,12 @@ class StarShipTemplate(ActorTemplate):
         keys = pygame.key.get_pressed()
 
         rotationOffset = glm.rotate(radians(360), self.getDirection().xyz)
-        speedRotation = glm.rotate(self.pitchSpeed,(1,0,0))*rotationOffset
+        speedRotation = glm.rotate(self.pitchSpeed,(1,0,0)) * rotationOffset
         self.moveWithMatrix(speedRotation)
-        speedRotation = glm.rotate(self.pitchSpeed,(0,1,0))*rotationOffset
+        speedRotation = glm.rotate(self.yawSpeed, (0, 1, 0)) * rotationOffset
         self.moveWithMatrix(speedRotation)
-        speedRotation = glm.rotate(self.pitchSpeed,(0,0,1))*rotationOffset
+        speedRotation = glm.rotate(self.rollSpeed, (0, 0, 1)) * rotationOffset
         self.moveWithMatrix(speedRotation)
-        print(speedRotation,'\n\n')
 
         speedTranslation = glm.translate(
             (glm.vec4(self.strafeSpeed*deltaTime, self.hoverSpeed*deltaTime, self.forwardSpeed*deltaTime, 0) * rotationOffset).xyz)
