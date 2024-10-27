@@ -11,5 +11,5 @@ in vec2 texCoord;
 
 void main()
 {
-    fragColor = texture(colourMap,texCoord);//*dot(normal.xyz,lightPos);//vec4(texture(colourMap,texCoord).xyz,0.0)*dot(lightPos,normal.xyz);
+    fragColor = texture(colourMap,vec2(texCoord.x,texCoord.y))*dot(normal.xyz,lightPos);//vec4(texture(colourMap,texCoord).xyz,0.0)*dot(lightPos,normal.xyz);
 }

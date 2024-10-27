@@ -12,7 +12,7 @@ import glm
 
 #The problematic code is somewhere in this function.
 class Model:
-    def __init__(self, ObjFilePath, TexFilePath,ID,shaderID = 0):
+    def __init__(self, ObjFilePath, TexFilePath,ID,shaderID = 0,directXTexture = True):
         self.objMatrix = glm.mat4(1)
         self.mousebuttondownlastframe = False
         self.__shaderID = shaderID
@@ -35,14 +35,12 @@ class Model:
 
             #Stores sets of texture coords into a temporary array.
             if databit.startswith("vt"):
-                print(f"{ID}: {databit}")
                 databitlist = databit.split(' ')[1:]
-                print(databitlist)
                 databitlistconverted = []
                 for value in databitlist:
                     databitlistconverted.append(float(value))
-                print(databitlistconverted)
                 texpos.append(databitlistconverted)
+                print(databitlistconverted)
 
             #Stores a list of normals into a temporary array.
             elif databit.startswith('vn'):
@@ -72,7 +70,7 @@ class Model:
                         for vert in vertpos[int(indexes[0]) - 1]:
                             vertexdata.append(vert)
                         try:
-                            for norm in normpos[int(indexes[1]) - 1]:
+                            for norm in normpos[int(indexes[2]) - 1]:
                                 vertexdata.append(norm)
                         #If the normal value is blank, it will fill the spaces with blank values
                         except:
@@ -81,8 +79,10 @@ class Model:
                             vertexdata.append(0.0)
                             print(f"Normal for face {databitlist} was not found.")
                         try:
-                            for tex in texpos[int(indexes[2]) - 1][:2]:
+                            print(texpos[int(4) - 1])
+                            for tex in texpos[int(indexes[1]) - 1]:
                                 vertexdata.append(tex)
+                                print(tex)
                         except:
                             vertexdata.append(0.0)
                             vertexdata.append(0.0)
@@ -99,13 +99,12 @@ class Model:
         #Generates the texture.
         self.texture = glGenTextures(1)
         glBindTexture(GL_TEXTURE_2D, self.texture)
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE)
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE)
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT)
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT)
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
         textureData = pygame.image.load(TexFilePath).convert_alpha()
-        #Flips the texture, for some reason pygame loads them in upside down so this needs to happen
-        pygame.transform.flip(textureData,False,True)
+        textureData = pygame.transform.flip(textureData,False,directXTexture)
         image_width, image_height = textureData.get_rect().size
         image = pygame.image.tobytes(textureData,"RGBA")
         glTexImage2D(GL_TEXTURE_2D,0,GL_RGBA,image_width,image_height,0,GL_RGBA,GL_UNSIGNED_BYTE,image)
@@ -184,7 +183,6 @@ class Skybox:
             if not(filedata):
                 raise Exception(f"File {cubeimagefilepaths[i]} failed to load")
 
-            print(cubeimagefilepaths[i],image_width,image_height)
             glTexImage2D(
                 GL_TEXTURE_CUBE_MAP_POSITIVE_X + i,
                 0,

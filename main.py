@@ -25,10 +25,11 @@ class Program:
 
         #Loads actors into a list of objects to be drawn to the screen.
         self.assets.append(props.Skybox("skyboxes/spaceSkybox0","skybox-prop"))
-        self.assets.append(
+        """self.assets.append(
             actors.StarShipTemplate(
             props.Model("levelobjects/AvaxInterceptor.obj","levelobjects/texturedata/AvaxInterceptorColourMap.png","avaxship-actor")
-        ))
+        ))"""
+        self.assets.append(props.Model("levelobjects/TestBlueJay.obj","levelobjects/texturedata/BlueJay.png","testplane-obj",directXTexture=False))
 
         #This is an error colour to show if something was not dran, this should ideally never be seen on the screen.
         glClearColor(1.0, 0.0, 1.0, 1)
