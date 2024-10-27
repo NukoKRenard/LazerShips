@@ -61,9 +61,9 @@ class StarShipTemplate(ActorTemplate):
         self.ID = self.costume.ID
 
     def flightcontroll(self,thrustvector,rotationvector):
-        self.strafeSpeed += thrustvector.x*(1/(self.speedMax*10000))
-        self.hoverSpeed += thrustvector.y*(1/(self.speedMax*10000))
-        self.forwardSpeed += thrustvector.z*(1/(self.speedMax*10000))
+        self.strafeSpeed += thrustvector[0]*(1/(self.speedMax*10000))
+        self.hoverSpeed += thrustvector[1]*(1/(self.speedMax*10000))
+        self.forwardSpeed += thrustvector[2]*(1/(self.speedMax*10000))
 
         if self.forwardSpeed > self.speedMax:
             self.forwardSpeed = self.speedMax
@@ -80,9 +80,9 @@ class StarShipTemplate(ActorTemplate):
         elif self.hoverSpeed < -self.speedMax / 3:
             self.hoverSpeed = -self.speedMax / 3
 
-        self.pitchSpeed += rotationvector.x*(1/(self.maxRotationSpeed*10000))
-        self.yawSpeed += rotationvector.y*(1/(self.maxRotationSpeed*10000))
-        self.rollSpeed += rotationvector.z*(1/(self.maxRotationSpeed*10000))
+        self.pitchSpeed += rotationvector[0]*(1/(self.maxRotationSpeed*10000))
+        self.yawSpeed += rotationvector[1]*(1/(self.maxRotationSpeed*10000))
+        self.rollSpeed += rotationvector[2]*(1/(self.maxRotationSpeed*10000))
 
         if self.pitchSpeed > self.maxRotationSpeed:
             self.pitchSpeed = self.maxRotationSpeed

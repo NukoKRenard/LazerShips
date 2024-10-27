@@ -119,6 +119,7 @@ class Camera:
             glUniformMatrix4fv(glGetUniformLocation(self.starshipShader, "worldMatrix"), 1, GL_FALSE, glm.value_ptr(worldMatrix))
             glUniform3f(glGetUniformLocation(self.starshipShader, "lightPos"), 1, 0, 0)
             glUniform1i(glGetUniformLocation(self.starshipShader, 'colourMap'), 0)
+            glUniform1i(glGetUniformLocation(self.starshipShader,"glowMap"),1)
 
         elif object.getShader() == 1:
             object.bindTexture()

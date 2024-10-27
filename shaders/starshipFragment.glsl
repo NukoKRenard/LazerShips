@@ -5,11 +5,12 @@ uniform mat4 objMatrix;
 
 uniform vec3 lightPos;
 uniform sampler2D colourMap;
+uniform sampler2D glowMap;
 
 in vec4 normal;
 in vec2 texCoord;
 
 void main()
 {
-    fragColor = texture(colourMap,vec2(texCoord.x,texCoord.y))*dot(normal.xyz,lightPos);//vec4(texture(colourMap,texCoord).xyz,0.0)*dot(lightPos,normal.xyz);
+    fragColor = texture(colourMap,texCoord)*min(dot(normal.xyz,lightPos)+texture(glowMap,texCoord),1.0);
 }

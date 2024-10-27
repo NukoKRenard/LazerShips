@@ -12,7 +12,7 @@ import glm
 
 #The problematic code is somewhere in this function.
 class Model:
-    def __init__(self, ObjFilePath, TexFilePath,ID,shaderID = 0,directXTexture = True):
+    def __init__(self, ObjFilePath, ColourMapPath, GlowMapPath, ID, shaderID = 0, directXTexture = True):
         self.objMatrix = glm.mat4(1)
         self.mousebuttondownlastframe = False
         self.__shaderID = shaderID
@@ -103,17 +103,32 @@ class Model:
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT)
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
-        textureData = pygame.image.load(TexFilePath).convert_alpha()
+        textureData = pygame.image.load(ColourMapPath).convert_alpha()
         textureData = pygame.transform.flip(textureData,False,directXTexture)
         image_width, image_height = textureData.get_rect().size
         image = pygame.image.tobytes(textureData,"RGBA")
         glTexImage2D(GL_TEXTURE_2D,0,GL_RGBA,image_width,image_height,0,GL_RGBA,GL_UNSIGNED_BYTE,image)
         glGenerateMipmap(GL_TEXTURE_2D)
 
+        self.glow = glGenTextures(1)
+        glBindTexture(GL_TEXTURE_2D, self.glow)
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT)
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT)
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
+        textureData = pygame.image.load(GlowMapPath).convert_alpha()
+        textureData = pygame.transform.flip(textureData, False, directXTexture)
+        image_width, image_height = textureData.get_rect().size
+        image = pygame.image.tobytes(textureData, "RGBA")
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, image_width, image_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, image)
+        glGenerateMipmap(GL_TEXTURE_2D)
+
     #A function to call to prepare the texture to be drawn.
     def bindTexture(self):
         glActiveTexture(GL_TEXTURE0)
         glBindTexture(GL_TEXTURE_2D,self.texture)
+        glActiveTexture(GL_TEXTURE1)
+        glBindTexture(GL_TEXTURE_2D, self.glow)
 
     def getVertexData(self):
         return self.__vertexdata

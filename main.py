@@ -23,13 +23,16 @@ class Program:
         self.userhasquit = False
         self.maincam = camera.Camera(45)
 
-        starshipmodel = props.Model("levelobjects/AvaxInterceptor.obj","levelobjects/texturedata/AvaxInterceptorColourMap.png","avaxship-actor")
+        starshipmodel = props.Model("levelobjects/AvaxInterceptor.obj",
+                                    "levelobjects/texturedata/AvaxInterceptorColourMap.png",
+                                     "levelobjects/texturedata/AvaxInterceptorGlowMap.png",
+                                    "avaxship-actor")
 
         #Loads actors into a list of objects to be drawn to the screen.
-        self.assets.append(props.Skybox("skyboxes/spaceSkybox0","skybox-prop"))
-        self.assets.append(actors.StarShipTemplate(starshipmodel))
         #This is an error colour to show if something was not dran, this should ideally never be seen on the screen.
         glClearColor(1.0, 0.0, 1.0, 1)
+        self.assets.append(props.Skybox("skyboxes/spaceSkybox0","level-skybox"))
+        self.assets.append(actors.StarShipTemplate(starshipmodel))
 
         while not self.userhasquit:
             events = pygame.event.get()
@@ -41,7 +44,7 @@ class Program:
                 if asset.ID.endswith('actor'):
                     asset.update(self.deltaTime)
 
-            self.assets[1].flightcontroll(glm.vec3(0,0,1),glm.vec3(1,0,0))
+            self.assets[1].flightcontroll((0,0,1),(0,0,1))
 
             for event in events:
                 if event.type == pygame.QUIT:
