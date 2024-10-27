@@ -12,7 +12,7 @@ from math import *
 class Camera:
     def __init__(self,fovy):
         self.screensize = (1920, 1080)
-        self.perspectiveMatrix = glm.perspective(radians(fovy),self.screensize[0]/self.screensize[1],.001,100)
+        self.perspectiveMatrix = glm.perspective(radians(fovy),self.screensize[0]/self.screensize[1],.001,1000)
         self.position = glm.vec4(0,0,0,1)
         self.direction = glm.vec4(0,0,1,0)
         self.up = glm.vec4(0,1,0,0)
@@ -90,7 +90,7 @@ class Camera:
 
     def renderScene(self,scenemodeldata):
         for model in scenemodeldata:
-            self.drawObj(model)
+            self.drawObj(model.getCostumeData())
 
     #Draws a given object to the screen. (NOTE: this function takes multiple different classes as input)
     def drawObj(self,object):

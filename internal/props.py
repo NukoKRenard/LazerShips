@@ -79,7 +79,7 @@ class Model:
                             vertexdata.append(0.0)
                             vertexdata.append(0.0)
                             vertexdata.append(0.0)
-                            print(f"Tex normal for face {databitlist} was not found.")
+                            print(f"Normal for face {databitlist} was not found.")
                         try:
                             for tex in texpos[int(indexes[2]) - 1][:2]:
                                 vertexdata.append(tex)
@@ -122,6 +122,8 @@ class Model:
         return self.__indexdata
     def getShader(self):
         return self.__shaderID
+    def getCostumeData(self):
+        return self
 
 class Skybox:
     def __init__(self, texturepath,ID):
@@ -203,3 +205,5 @@ class Skybox:
         return self.__indexdata
     def getShader(self):
         return 1
+    def getCostumeData(self):
+        return self

@@ -11,6 +11,7 @@ from math import *
 
 import internal.camera as camera
 import internal.props as props
+import internal.actors as actors
 
 class Program:
     def __init__(self):
@@ -18,13 +19,16 @@ class Program:
         self.deltaTime = 1/60
         pygame.mouse.set_visible(False)
         self.__clock = pygame.time.Clock()
-        self.models = []
+        self.assets = []
         self.userhasquit = False
         self.maincam = camera.Camera(45)
 
         #Loads actors into a list of objects to be drawn to the screen.
-        self.models.append(props.Model("levelobjects/AvaxInterceptor.obj", "levelobjects/texturedata/AvaxInterceptorColourMap.png", "ship-model"))
-        self.models.append(props.Skybox("skybox","space-skybox"))
+        self.assets.append(props.Skybox("skyboxes/spaceSkybox0","skybox-prop"))
+        self.assets.append(
+            actors.StarShipTemplate(
+            props.Model("levelobjects/AvaxInterceptor.obj","levelobjects/texturedata/AvaxInterceptorColourMap.png","avaxship-actor")
+        ))
 
         #This is an error colour to show if something was not dran, this should ideally never be seen on the screen.
         glClearColor(1.0, 0.0, 1.0, 1)
@@ -35,6 +39,13 @@ class Program:
             #The code below rotates the object in accordance with delta time, it has been disabled for debugging
             #self.models[0].objMatrix *= glm.rotate((1/60)*self.deltaTime,(0,1,0))
 
+            for asset in self.assets:
+                if asset.ID.endswith('actor'):
+                    asset.update(self.deltaTime)
+
+            self.assets[1].speed = 1/10
+            self.assets[1].pitch(1/60)
+
             for event in events:
                 if event.type == pygame.QUIT:
                     self.userhasquit = True
@@ -44,7 +55,7 @@ class Program:
             #NOTE as of this stage userinput is crude. Movement directions to not account for the look direction.
             self.maincam.updateCamera(self.deltaTime)
             #This function loops through all of the objects in the prop list and draws them with the drawObj() function
-            self.maincam.renderScene(self.models)
+            self.maincam.renderScene(self.assets)
 
             pygame.display.flip()
             self.__clock.tick(60)
