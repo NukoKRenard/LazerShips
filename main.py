@@ -44,7 +44,6 @@ class Program:
                     asset.update(self.deltaTime)
 
             self.assets[1].speed = 1/10
-            self.assets[1].pitch(1/60)
 
             for event in events:
                 if event.type == pygame.QUIT:
