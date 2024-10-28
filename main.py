@@ -44,7 +44,7 @@ class Program:
                 if asset.ID.endswith('actor'):
                     asset.update(self.deltaTime)
 
-            self.assets[1].flightcontroll((0,0,1),(0,0,1))
+            self.assets[1].flightcontroll((0,0,0),(0,0,0))
 
             for event in events:
                 if event.type == pygame.QUIT:
