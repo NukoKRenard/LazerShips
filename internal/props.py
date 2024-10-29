@@ -11,10 +11,12 @@ import pygame
 import numpy
 import glm
 
-#The problematic code is somewhere in this function.
 class Model:
     def __init__(self, ObjFilePath, ColourMapPath, GlowMapPath, ID, shaderID = 0, directXTexture = True):
-        self.objMatrix = glm.mat4(1)
+        self.translation = glm.mat4(1)
+        self.rotation = glm.mat4(1)
+        self.scale = glm.mat4(1)
+
         self.mousebuttondownlastframe = False
         self.__shaderID = shaderID
         self.__ID = ID
@@ -128,12 +130,19 @@ class Model:
         return self.__ID
     def getIsActor(self):
         return False
+
+
+    def getMatrix(self):
+        return self.translation * self.rotation * self.scale
+
+
     def drawObj(self,worldMatrix,perspectiveMatrix,
                 shaderlist,
                 vertexbufferlist,
                 indexbufferlist
                 ):
         self.bindTexture()
+        objMatrix = self.translation * self.rotation * self.scale
 
         glDepthFunc(GL_LESS)
         glUseProgram(shaderlist[0])
@@ -148,9 +157,8 @@ class Model:
         glEnableVertexAttribArray(1)
         glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), c_void_p(24))
         glEnableVertexAttribArray(2)
-
         glUniformMatrix4fv(glGetUniformLocation(shaderlist[0], "objMatrix"), 1, GL_FALSE,
-                           glm.value_ptr(self.objMatrix))
+                           glm.value_ptr(objMatrix))
         glUniformMatrix4fv(glGetUniformLocation(shaderlist[0], "perspectiveMatrix"), 1, GL_FALSE,
                            glm.value_ptr(perspectiveMatrix))
         glUniformMatrix4fv(glGetUniformLocation(shaderlist[0], "worldMatrix"), 1, GL_FALSE,

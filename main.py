@@ -30,23 +30,23 @@ class Program:
 
         starship = props.Model("levelobjects/AvaxInterceptor.obj","levelobjects/texturedata/AvaxInterceptorColourMap.png","levelobjects/texturedata/AvaxInterceptorGlowMap.png","avaxship-costume")
         self.assets.append(props.Skybox("skyboxes/spaceSkybox0","level-skybox"))
-        self.assets.append(copy.deepcopy(starship))
+        self.assets.append(actors.StarShipTemplate([copy.deepcopy(starship)],"avaxinterceptor-actor"))
 
         while not self.userhasquit:
             events = pygame.event.get()
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
+            self.assets[1].rotation = glm.rotate(self.assets[1].rotation,1/60,(0,1,0))
+            self.assets[1].translation = glm.translate(self.assets[1].translation,(0,0,1))
 
             for asset in self.assets:
                 if asset.getIsActor():
                     asset.update(self.deltaTime)
+                    print(asset)
 
             for event in events:
                 if event.type == pygame.QUIT:
                     self.userhasquit = True
                     break
-
-            self.assets[1].objMatrix *= glm.rotate(radians(1),(0,1,0))
-            self.assets[1].objMatrix *= glm.translate((0,0,1/60))
 
             #Updates the cameras position based on userinput
             #NOTE as of this stage userinput is crude. Movement directions to not account for the look direction.
