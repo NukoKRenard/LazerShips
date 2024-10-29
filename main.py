@@ -35,13 +35,10 @@ class Program:
         while not self.userhasquit:
             events = pygame.event.get()
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
-            self.assets[1].rotation = glm.rotate(self.assets[1].rotation,1/60,(0,1,0))
-            self.assets[1].translation = glm.translate(self.assets[1].translation,(0,0,1))
 
             for asset in self.assets:
                 if asset.getIsActor():
                     asset.update(self.deltaTime)
-                    print(asset)
 
             for event in events:
                 if event.type == pygame.QUIT:

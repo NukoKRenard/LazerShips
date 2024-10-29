@@ -15,9 +15,9 @@ from glm import normalize
 
 class ActorTemplate:
     def __init__(self,costumes,ID):
-        self.translation = glm.mat4(1)
-        self.rotation = glm.mat4(1)
-        self.scale = glm.mat4(1)
+        self.__translation = glm.mat4(1)
+        self.__rotation = glm.mat4(1)
+        self.__scale = glm.mat4(1)
         self.costumes = costumes
         print(self.costumes)
 
@@ -44,8 +44,27 @@ class ActorTemplate:
                 vertexbufferlist,
                 indexbufferlist
             )
-    def updateChildPos(self):
-        pass
+
+    def translate(self, translation):
+        self.__translation *= translation
+    def setpos(self, position):
+        self.__translation = position
+    def getPos(self):
+        return self.__translation;
+
+    def rotate(self, angle):
+        self.__translation *= angle
+    def setrot(self, rotation):
+        self.__translation = rotation
+    def getRot(self):
+        return self.__rotation;
+
+    def resize(self, resize):
+        self.__scale *= resize
+    def setScale(self, size):
+        self.__scale = size
+    def getScale(self):
+        return self.__scale
 
     def update(self,deltaTime):
         for costume in self.costumes:
