@@ -8,28 +8,54 @@ actors effect the flow of the game.
 import glm
 import pygame
 from math import *
+import copy
 
 from glm import normalize
 
 
 class ActorTemplate:
-    def __init__(self,costume,startMatrix=glm.mat4(1)):
-        print(costume)
-        self.costume = costume
+    def __init__(self,costumes,ID,startMatrix=glm.mat4(1)):
+        self.costumes = costumes
         self.__position = glm.vec4(0,0,0,1) * startMatrix
         self.__direction = glm.normalize(glm.vec4(0,0,1,0) * startMatrix)
         self.__up = glm.normalize(glm.vec4(0,1,0,0) * startMatrix)
+        self.__ID = ID
 
-        self.costume.objMatrix = startMatrix
-    def moveWithMatrix(self,matrix):
+    def getID(self):
+        return self.__ID
+
+    def getIsActor(self):
+        return True
+
+    def drawObj(self, worldMatrix, perspectiveMatrix,
+                shaderlist,
+                vertexbufferlist,
+                indexbufferlist
+                ):
+        for costume in self.costumes:
+            costume.drawObj(
+                worldMatrix, perspectiveMatrix,
+                shaderlist,
+                vertexbufferlist,
+                indexbufferlist
+            )
+    def moveWithMatrix(self,matrix,coordinatecenter=None):
+        if coordinatecenter == None:
+            coordinatecenter = self.__position
         self.__position = self.__position * matrix
         self.__direction = glm.normalize(self.__direction * matrix)
         self.__up = glm.normalize(self.__up * matrix)
 
-        self.costume.objMatrix *= matrix
+        for costume in self.costumes:
+            if costume.getIsActor():
+                costume.moveWithMatrix(matrix,coordinatecenter)
+            else:
+                costumeobjmatrixprev = copy.copy(costume.objMatrix)
+                costume.objMatrix *= matrix
+                print((costumeobjmatrixprev * glm.vec4(0, 0, 0, 1)))
 
     def getCostumeData(self):
-        return self.costume
+        return self.costumes
 
     def getPosition(self):
         return self.__position
@@ -38,12 +64,14 @@ class ActorTemplate:
     def getUp(self):
         return self.__up
 
-    def update(self):
-        pass
+    def update(self,deltaTime):
+        for costume in self.costumes:
+            if costume.getIsActor():
+                costume.update(deltaTime)
 
 class StarShipTemplate(ActorTemplate):
-    def __init__(self, starshipCostume,minSpeed=0,maxSpeed=1/20,maxrotatespeed = 1/60,startMatrix = glm.mat4(1)):
-        ActorTemplate.__init__(self,starshipCostume,startMatrix)
+    def __init__(self, starshipCostumes,ID,minSpeed=0,maxSpeed=1/20,maxrotatespeed = 1/60,startMatrix = glm.mat4(1)):
+        ActorTemplate.__init__(self,starshipCostumes,ID,startMatrix)
 
         self.speedMin = minSpeed
         self.speedMax = maxSpeed
@@ -58,9 +86,7 @@ class StarShipTemplate(ActorTemplate):
         self.yawSpeed = 0
         self.rollSpeed = 0
 
-        self.ID = self.costume.ID
-
-    def flightcontroll(self,thrustvector,rotationvector):
+    def flightControll(self,thrustvector,rotationvector):
         self.strafeSpeed += thrustvector[0]*(1/(self.speedMax*10000))
         self.hoverSpeed += thrustvector[1]*(1/(self.speedMax*10000))
         self.forwardSpeed += thrustvector[2]*(1/(self.speedMax*10000))
@@ -138,3 +164,7 @@ class StarShipTemplate(ActorTemplate):
             self.rollSpeed -= 1/(self.maxRotationSpeed*100000)
         elif self.rollSpeed < 0:
             self.rollSpeed += (1/(self.maxRotationSpeed*100000))
+
+        for costume in self.costumes:
+            if costume.getIsActor():
+                costume.update(deltaTime)

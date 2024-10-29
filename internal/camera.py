@@ -89,59 +89,13 @@ class Camera:
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, self.skyboxIndexBuffer)
 
     def renderScene(self,scenemodeldata):
-        for model in scenemodeldata:
-            self.drawObj(model.getCostumeData())
-
-    #Draws a given object to the screen. (NOTE: this function takes multiple different classes as input)
-    def drawObj(self,object):
-        worldMatrix = glm.lookAt(glm.vec3(self.position),glm.vec3(self.position+self.direction),glm.vec3(self.up))
-        vertexdata = object.getVertexData()
-        indexdata = object.getIndexData()
-        if object.getShader() == 0:
-            object.bindTexture()
-
-            glDepthFunc(GL_LESS)
-            glUseProgram(self.starshipShader)
-            glBindBuffer(GL_ARRAY_BUFFER,self.starshipVertexBuffer)
-            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,self.starshipIndexBuffer)
-            glBufferData(GL_ELEMENT_ARRAY_BUFFER, indexdata.nbytes, indexdata, GL_STATIC_DRAW)
-            glBufferData(GL_ARRAY_BUFFER, vertexdata.nbytes, vertexdata, GL_STATIC_DRAW)
-
-            glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), c_void_p(0))
-            glEnableVertexAttribArray(0)
-            glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), c_void_p(12))
-            glEnableVertexAttribArray(1)
-            glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), c_void_p(24))
-            glEnableVertexAttribArray(2)
-
-            glUniformMatrix4fv(glGetUniformLocation(self.starshipShader, "objMatrix"), 1, GL_FALSE, glm.value_ptr(object.objMatrix))
-            glUniformMatrix4fv(glGetUniformLocation(self.starshipShader, "perspectiveMatrix"), 1, GL_FALSE, glm.value_ptr(self.perspectiveMatrix))
-            glUniformMatrix4fv(glGetUniformLocation(self.starshipShader, "worldMatrix"), 1, GL_FALSE, glm.value_ptr(worldMatrix))
-            glUniform3f(glGetUniformLocation(self.starshipShader, "lightPos"), 1, 0, 0)
-            glUniform1i(glGetUniformLocation(self.starshipShader, 'colourMap'), 0)
-            glUniform1i(glGetUniformLocation(self.starshipShader,"glowMap"),1)
-
-        elif object.getShader() == 1:
-            object.bindTexture()
-
-            glDepthFunc(GL_EQUAL)
-            glUseProgram(self.skyboxShader)
-            glBindBuffer(GL_ARRAY_BUFFER,self.skyboxVertexBuffer)
-            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,self.skyboxIndexBuffer)
-
-            glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), c_void_p(0))
-            glEnableVertexAttribArray(0)
-
-            glBufferData(GL_ELEMENT_ARRAY_BUFFER, indexdata.nbytes, indexdata, GL_STATIC_DRAW)
-            glBufferData(GL_ARRAY_BUFFER, vertexdata.nbytes, vertexdata, GL_STATIC_DRAW)
-
-
-            glUniformMatrix4fv(glGetUniformLocation(self.skyboxShader,"worldMatrix"),1,GL_FALSE,glm.value_ptr(worldMatrix))
-            glUniformMatrix4fv(glGetUniformLocation(self.skyboxShader,"perspectiveMatrix"),1,GL_FALSE,glm.value_ptr(self.perspectiveMatrix))
-            glUniform1i(glGetUniformLocation(self.starshipShader, 'skyboxTexture'), 0)
-
-
-        glDrawElements(GL_TRIANGLES, len(indexdata), GL_UNSIGNED_INT, None)
+        worldMatrix = glm.lookAt(glm.vec3(self.position), glm.vec3(self.position + self.direction), glm.vec3(self.up))
+        for object in scenemodeldata:
+            object.drawObj(worldMatrix,self.perspectiveMatrix,
+                           (self.starshipShader,self.skyboxShader),
+                           (self.starshipVertexBuffer,self.skyboxVertexBuffer),
+                           (self.starshipIndexBuffer,self.skyboxIndexBuffer)
+                           )
 
     #Calculates camera movement, Very crude as of right now
     def updateCamera(self,deltaTime):

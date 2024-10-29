@@ -6,6 +6,7 @@ Props would make up static parts of the game, like the level geomery, or a tree,
 """
 
 from OpenGL.GL import *
+from ctypes import c_void_p
 import pygame
 import numpy
 import glm
@@ -16,7 +17,7 @@ class Model:
         self.objMatrix = glm.mat4(1)
         self.mousebuttondownlastframe = False
         self.__shaderID = shaderID
-        self.ID = ID
+        self.__ID = ID
         objData = []
         with open(ObjFilePath, 'r') as objFile:
             objData = objFile.readlines()
@@ -123,6 +124,43 @@ class Model:
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, image_width, image_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, image)
         glGenerateMipmap(GL_TEXTURE_2D)
 
+    def getID(self):
+        return self.__ID
+    def getIsActor(self):
+        return False
+    def drawObj(self,worldMatrix,perspectiveMatrix,
+                shaderlist,
+                vertexbufferlist,
+                indexbufferlist
+                ):
+        self.bindTexture()
+
+        glDepthFunc(GL_LESS)
+        glUseProgram(shaderlist[0])
+        glBindBuffer(GL_ARRAY_BUFFER, shaderlist[0])
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexbufferlist[0])
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, self.__indexdata.nbytes, self.__indexdata, GL_STATIC_DRAW)
+        glBufferData(GL_ARRAY_BUFFER, self.__vertexdata.nbytes, self.__vertexdata, GL_STATIC_DRAW)
+
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), c_void_p(0))
+        glEnableVertexAttribArray(0)
+        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), c_void_p(12))
+        glEnableVertexAttribArray(1)
+        glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), c_void_p(24))
+        glEnableVertexAttribArray(2)
+
+        glUniformMatrix4fv(glGetUniformLocation(shaderlist[0], "objMatrix"), 1, GL_FALSE,
+                           glm.value_ptr(self.objMatrix))
+        glUniformMatrix4fv(glGetUniformLocation(shaderlist[0], "perspectiveMatrix"), 1, GL_FALSE,
+                           glm.value_ptr(perspectiveMatrix))
+        glUniformMatrix4fv(glGetUniformLocation(shaderlist[0], "worldMatrix"), 1, GL_FALSE,
+                           glm.value_ptr(worldMatrix))
+        glUniform3f(glGetUniformLocation(shaderlist[0], "lightPos"), 1, 0, 0)
+        glUniform1i(glGetUniformLocation(shaderlist[0], 'colourMap'), 0)
+        glUniform1i(glGetUniformLocation(shaderlist[0], "glowMap"), 1)
+
+        glDrawElements(GL_TRIANGLES, len(self.__indexdata), GL_UNSIGNED_INT, None)
+
     #A function to call to prepare the texture to be drawn.
     def bindTexture(self):
         glActiveTexture(GL_TEXTURE0)
@@ -137,11 +175,11 @@ class Model:
     def getShader(self):
         return self.__shaderID
     def getCostumeData(self):
-        return self
+        return [self]
 
 class Skybox:
     def __init__(self, texturepath,ID):
-        self.ID = ID
+        self.__ID = ID
         vertexdata = (
              1.0, 1.0, -1.0,
              1.0,-1.0, -1.0,
@@ -209,6 +247,37 @@ class Skybox:
                 GL_UNSIGNED_BYTE,
                 filedata
             )
+    def getID(self):
+        return self.__ID
+
+    def drawObj(self, worldMatrix, perspectiveMatrix,
+                shaderlist,
+                vertexbufferlist,
+                indexbufferlist
+                ):
+        self.bindTexture()
+
+        glDepthFunc(GL_EQUAL)
+        glUseProgram(shaderlist[1])
+        glBindBuffer(GL_ARRAY_BUFFER, vertexbufferlist[1])
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexbufferlist[1])
+
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), c_void_p(0))
+        glEnableVertexAttribArray(0)
+
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, self.__indexdata.nbytes, self.__indexdata, GL_STATIC_DRAW)
+        glBufferData(GL_ARRAY_BUFFER, self.__vertexdata.nbytes, self.__vertexdata, GL_STATIC_DRAW)
+
+        glUniformMatrix4fv(glGetUniformLocation(shaderlist[1], "worldMatrix"), 1, GL_FALSE,
+                           glm.value_ptr(worldMatrix))
+        glUniformMatrix4fv(glGetUniformLocation(shaderlist[1], "perspectiveMatrix"), 1, GL_FALSE,
+                           glm.value_ptr(perspectiveMatrix))
+        glUniform1i(glGetUniformLocation(shaderlist[1], 'skyboxTexture'), 0)
+
+        glDrawElements(GL_TRIANGLES, len(self.__indexdata), GL_UNSIGNED_INT, None)
+
+    def getIsActor(self):
+        return False
     def bindTexture(self):
         glActiveTexture(GL_TEXTURE0)
         glBindTexture(GL_TEXTURE_CUBE_MAP, self.texture)
@@ -219,4 +288,4 @@ class Skybox:
     def getShader(self):
         return 1
     def getCostumeData(self):
-        return self
+        return [self]
