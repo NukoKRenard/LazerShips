@@ -30,11 +30,18 @@ class Program:
 
         starship = props.Model("levelobjects/AvaxInterceptor.obj","levelobjects/texturedata/AvaxInterceptorColourMap.png","levelobjects/texturedata/AvaxInterceptorGlowMap.png","avaxship-costume")
         self.assets.append(props.Skybox("skyboxes/spaceSkybox0","level-skybox"))
-        self.assets.append(actors.StarShipTemplate([copy.deepcopy(starship)],"avaxinterceptor-actor"))
+        self.assets.append(actors.StarShipTemplate([copy.deepcopy(starship),copy.deepcopy(starship)],"avaxinterceptor-actor"))
 
         while not self.userhasquit:
             events = pygame.event.get()
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
+
+            self.assets[1].costumes[0].setpos(glm.translate((0,0,20)))
+            print(self.assets[1].costumes[0].getRot())
+            self.assets[1].costumes[0].rotate(glm.rotate(1/60,(0,0,1)))
+            self.assets[1].setScale(glm.scale((.1,.1,.1)))
+            self.assets[1].resize(glm.scale((1,1,1.5)))
+            self.assets[1].rotate(glm.rotate(1/60,(0,1,0)))
 
             for asset in self.assets:
                 if asset.getIsActor():

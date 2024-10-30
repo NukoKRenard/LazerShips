@@ -139,11 +139,11 @@ class Model:
         return self.__translation;
 
     def rotate(self,angle):
-        self.__translation *= angle
+        self.__rotation *= angle
     def setrot(self,rotation):
-        self.__translation = rotation
+        self.__rotation = rotation
     def getRot(self):
-        return self.__rotation;
+        return self.__rotation
 
     def resize(self,resize):
         self.__scale *= resize
@@ -159,10 +159,11 @@ class Model:
     def drawObj(self,worldMatrix,perspectiveMatrix,
                 shaderlist,
                 vertexbufferlist,
-                indexbufferlist
+                indexbufferlist,
+                parentMatrix=glm.vec4(1)
                 ):
         self.bindTexture()
-        objMatrix = self.translation * self.rotation * self.scale
+        objMatrix = parentMatrix*(self.__translation * self.__rotation * self.__scale)
 
         glDepthFunc(GL_LESS)
         glUseProgram(shaderlist[0])

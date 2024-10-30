@@ -19,7 +19,6 @@ class ActorTemplate:
         self.__rotation = glm.mat4(1)
         self.__scale = glm.mat4(1)
         self.costumes = costumes
-        print(self.costumes)
 
         self.__ID = ID
 
@@ -35,14 +34,16 @@ class ActorTemplate:
     def drawObj(self, worldMatrix, perspectiveMatrix,
                 shaderlist,
                 vertexbufferlist,
-                indexbufferlist
+                indexbufferlist,
+                parentMatrix=glm.vec4(1),
                 ):
         for costume in self.costumes:
             costume.drawObj(
                 worldMatrix, perspectiveMatrix,
                 shaderlist,
                 vertexbufferlist,
-                indexbufferlist
+                indexbufferlist,
+                (self.__translation*self.__rotation*self.__scale)
             )
 
     def translate(self, translation):
@@ -53,11 +54,11 @@ class ActorTemplate:
         return self.__translation;
 
     def rotate(self, angle):
-        self.__translation *= angle
+        self.__rotation *= angle
     def setrot(self, rotation):
-        self.__translation = rotation
+        self.__rotation = rotation
     def getRot(self):
-        return self.__rotation;
+        return self.__rotation
 
     def resize(self, resize):
         self.__scale *= resize
