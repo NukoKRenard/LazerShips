@@ -35,7 +35,7 @@ class ActorTemplate:
                 shaderlist,
                 vertexbufferlist,
                 indexbufferlist,
-                parentMatrix=glm.vec4(1),
+                parentMatrix=glm.mat4(1),
                 ):
         for costume in self.costumes:
             costume.drawObj(
@@ -43,7 +43,7 @@ class ActorTemplate:
                 shaderlist,
                 vertexbufferlist,
                 indexbufferlist,
-                (self.__translation*self.__rotation*self.__scale)
+                parentMatrix*(self.__translation*self.__rotation*self.__scale)
             )
 
     def translate(self, translation):
@@ -69,7 +69,6 @@ class ActorTemplate:
 
     def update(self,deltaTime):
         for costume in self.costumes:
-            print(self.rotation)
             if costume.getIsActor():
                 costume.update(deltaTime)
 
