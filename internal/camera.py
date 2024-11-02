@@ -20,6 +20,10 @@ class Camera:
 
         self.screen = pygame.display.set_mode(self.screensize, pygame.OPENGL | pygame.DOUBLEBUF)
 
+        # This is an error colour to show if something was not dran, this should ideally never be seen on the screen.
+
+        glClearColor(1.0, 0.0, 1.0, 1)
+
         # Opens, reads, and stores the uncompiled vertex shader in a string.
         vertexsrc = ""
         with open("shaders/starshipVertex.glsl", 'r') as vertexshaderfile:
@@ -115,3 +119,16 @@ class Camera:
             self.position.x += 1/30*deltaTime
         if pygame.key.get_pressed()[pygame.K_d]:
             self.position.x -= 1/30*deltaTime
+
+class ShipCamera(Camera):
+    def __init__(self,fovy,parentship=None):
+        Camera.__init__(self,fovy)
+        self.parentship = parentship
+
+    def updateCamera(self,deltaTime):
+        self.position = self.parentship.getPos()*glm.vec4(0,10,-30,1)
+        self.direction = self.parentship.getRot()*glm.vec4(0,0,1,0)
+        self.up = self.parentship.getRot()*glm.vec4(0,1,0,0)
+
+    def attachToShip(self,target):
+        self.parentship = target
