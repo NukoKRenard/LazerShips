@@ -167,6 +167,7 @@ class StarShipTemplate(ActorTemplate):
             self.__health = self.__maxhealth
     def getHealth(self):
         return self.__health
+    #
 
 class AIShip(StarShipTemplate):
     def __init__(self,shipmodel,ID,team):
