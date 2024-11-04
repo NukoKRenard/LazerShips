@@ -39,13 +39,9 @@ class Camera:
         glShaderSource(shader_vert, vertexsrc)
         glCompileShader(shader_vert)
 
-        print(glGetShaderiv(shader_vert,GL_COMPILE_STATUS))
-
         shader_frag = glCreateShader(GL_FRAGMENT_SHADER)
         glShaderSource(shader_frag, fragmentsrc)
         glCompileShader(shader_frag)
-
-        print(glGetShaderiv(shader_vert, GL_COMPILE_STATUS))
 
         glAttachShader(self.starshipShader, shader_vert)
         glAttachShader(self.starshipShader, shader_frag)
@@ -74,13 +70,9 @@ class Camera:
         glShaderSource(shader_vert, vertexsrc)
         glCompileShader(shader_vert)
 
-        print(glGetShaderiv(shader_vert, GL_COMPILE_STATUS))
-
         shader_frag = glCreateShader(GL_FRAGMENT_SHADER)
         glShaderSource(shader_frag, fragmentsrc)
         glCompileShader(shader_frag)
-
-        print(glGetShaderiv(shader_vert, GL_COMPILE_STATUS))
 
         glAttachShader(self.skyboxShader, shader_vert)
         glAttachShader(self.skyboxShader, shader_frag)
@@ -126,7 +118,7 @@ class ShipCamera(Camera):
         self.parentship = parentship
 
     def updateCamera(self,deltaTime):
-        self.position = self.parentship.getPos()*glm.vec4(0,10,-30,1)
+        self.position = self.parentship.getPos()*(self.parentship.getRot()*glm.vec4(0,6,-30,1))
         self.direction = self.parentship.getRot()*glm.vec4(0,0,1,0)
         self.up = self.parentship.getRot()*glm.vec4(0,1,0,0)
 

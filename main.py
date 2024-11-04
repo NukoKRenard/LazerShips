@@ -21,21 +21,28 @@ class Program:
         pygame.init()
 
         #Display
-        self.maincam = camera.ShipCamera(45)
+        self.maincam = camera.Camera(45)
 
-        #Entities
+        # Entities
         self.assets = []
+
+        avaxTeam = datatypes.Team("Avax", {}, {})
+        tx01Team = datatypes.Team("TX-01", {}, {})
+
         starship = props.Model("levelobjects/AvaxInterceptor.obj",
                                "levelobjects/texturedata/AvaxInterceptorColourMap.png",
                                "levelobjects/texturedata/AvaxInterceptorGlowMap.png", "avaxship-costume")
         self.assets.append(props.Skybox("skyboxes/spaceSkybox0", "level-skybox"))
         self.assets.append(
-            actors.StarShipTemplate([copy.deepcopy(starship)],"commander tuvok")
+            actors.AIShip([copy.deepcopy(starship)],"commander tuvok",tx01Team)
         )
-        self.maincam.attachToShip(self.assets[1])
-
-        avaxTeam = datatypes.Team("Avax",{},{})
-        tx01Team = datatypes.Team("TX-01",{},{})
+        tx01Team.addToTeam(self.assets[1])
+        self.assets[1].setpos(glm.translate((0,0,25)))
+        self.assets.append(
+            actors.AIShip([copy.deepcopy(starship)],"Commander riker",avaxTeam)
+        )
+        avaxTeam.addToTeam(self.assets[2])
+        #self.maincam.attachToShip(self.assets[1])
 
         avaxTeam.declareWar(tx01Team)
         tx01Team.declareWar(avaxTeam)
@@ -56,6 +63,8 @@ class Program:
             else:
                 self.deltaTime = 0
 
+            self.assets[1].roll(1)
+
 
 
             #Events
@@ -64,11 +73,8 @@ class Program:
                     self.userhasquit = True
                     break
             events = pygame.event.get()
-            #self.assets[1].throttleSpeed(1)
-            self.assets[1].pitch(5)
 
             #Refresh
-            self.assets[1].throttleSpeed(1)
             for asset in self.assets:
                 if asset.getIsActor():
                     asset.update(self.deltaTime)

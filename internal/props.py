@@ -43,7 +43,6 @@ class Model:
                 for value in databitlist:
                     databitlistconverted.append(float(value))
                 texpos.append(databitlistconverted)
-                print(databitlistconverted)
 
             #Stores a list of normals into a temporary array.
             elif databit.startswith('vn'):
@@ -82,10 +81,8 @@ class Model:
                             vertexdata.append(0.0)
                             print(f"Normal for face {databitlist} was not found.")
                         try:
-                            print(texpos[int(4) - 1])
                             for tex in texpos[int(indexes[1]) - 1]:
                                 vertexdata.append(tex)
-                                print(tex)
                         except:
                             vertexdata.append(0.0)
                             vertexdata.append(0.0)

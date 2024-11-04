@@ -78,7 +78,7 @@ class ActorTemplate:
 class StarShipTemplate(ActorTemplate):
     def __init__(self,
                  starshipCostumes,ID,
-                 minSpeed=0,maxSpeed=1/20,maxrotatespeed = 1/60,
+                 minSpeed=0,maxSpeed=1,maxrotatespeed = 1/10,
                  maxhealth = 1):
         ActorTemplate.__init__(self,starshipCostumes,ID)
         self.__health = maxhealth
@@ -88,50 +88,68 @@ class StarShipTemplate(ActorTemplate):
         self.__minspeed = minSpeed
         self.__maxrotatespeedc = maxrotatespeed
 
-        self.dx = 0
-        self.dy = 0
-        self.dz = 0
+        self.__dx = 0
+        self.__dy = 0
+        self.__dz = 0
 
-        self.rp = 0
-        self.ry = 0
-        self.rr = 0
+        self.__rp = 0
+        self.__ry = 0
+        self.__rr = 0
 
     def update(self,deltaTime):
         ActorTemplate.update(self,deltaTime)
 
-        self.dx -= self.dx/100
-        self.dy -= self.dy/100
-        self.dz -= (self.dz-self.tdz)/100
+        self.__dx -= self.__dx / 100
+        self.__dy -= self.__dy / 100
+        self.__dz -= self.__dz / 100
 
-        self.rp -= self.rp/100
-        print(self.rp)
-        self.ry -= self.ry/100
-        self.rr -= self.rr/100
+        self.__rp -= self.__rp / 100
+        self.__ry -= self.__ry / 100
+        self.__rr -= self.__rr / 100
 
         rotation = glm.mat4(1)
-        if self.rp + self.ry + self.rr:
-            rotation *= glm.rotate(self.__maxrotatespeedc*(self.rp+self.ry+self.rr),(self.rp,self.ry,self.rr))
+        if self.__rp + self.__ry + self.__rr:
+            rotation *= glm.rotate(self.__maxrotatespeedc * (self.__rp + self.__ry + self.__rr), (self.__rp, self.__ry, self.__rr))
         self.rotate(rotation)
-        self.translate(glm.translate((self.getRot()*glm.vec4(self.dx,self.dy,self.dz,0)).xyz))
+        self.translate(glm.translate((self.getRot() * glm.vec4(self.__dx, self.__dy, self.__dz, 0)).xyz))
 
     def pitch(self,degree):
-        self.rp = degree*(1/60)
+        self.__rp += degree / 60
+        if self.__rp > self.__maxrotatespeedc:
+            self.__rp = self.__maxrotatespeedc
+        elif self.__rp < -self.__maxrotatespeedc:
+            self.__rp = -self.__maxrotatespeedc
     def yaw(self,degree):
-        self.ry = degree*(1/60)
+        self.__ry += degree / 60
+        if self.__ry > self.__maxrotatespeedc:
+            self.__ry = self.__maxrotatespeedc
+        elif self.__ry < -self.__maxrotatespeedc:
+            self.__ry = -self.__maxrotatespeedc
     def roll(self,degree):
-        self.rr = degree*(1/60)
+        self.__rr += degree / 60
+        if self.__rr > self.__maxrotatespeedc:
+            self.__rr = self.__maxrotatespeedc
+        elif self.__rr < -self.__maxrotatespeedc:
+            self.__rr = -self.__maxrotatespeedc
 
     def throttleSpeed(self,speed):
-        self.tdz = self.__minspeed+((self.__maxspeed-self.__minspeed)*speed)
-        if self.tdz > self.__maxspeed:
-            self.tdz = self.__maxspeed
-        elif self.tdz < self.__minspeed:
-            self.tdz = self.__minspeed
-        print(self.tdz)
+        self.__dz += speed / 100
+        if self.__dz > self.__maxspeed:
+            self.__dz = self.__maxspeed
+        elif self.__dz < self.__minspeed:
+            self.__dz = self.__minspeed
     def strafe(self,speed):
-        self.dx = self.__maxspeed*.5*speed
+        self.__dx += speed / 60
+        if self.__dx > self.__maxspeed/2:
+            self.__dx = self.__maxspeed / 2
+        elif self.__dx < -self.__maxspeed/2:
+            self.__dx = -self.__maxspeed / 2
     def hover(self,speed):
-        self.dy = self.__maxspeed*.5*speed
+        self.__dy += speed / 60
+        if self.__dy > self.__maxspeed/2:
+            self.__dy = self.__maxspeed / 2
+        elif self.__dy < -self.__maxspeed/2:
+            self.__dy = -self.__maxspeed / 2
 
     def damage(self,points):
         if points < 0:
@@ -152,16 +170,31 @@ class StarShipTemplate(ActorTemplate):
 
 class AIShip(StarShipTemplate):
     def __init__(self,shipmodel,ID,team):
-        StarShipTemplate.__init__(shipmodel,ID)
+        StarShipTemplate.__init__(self,shipmodel,ID)
         self.__team = team
-        self.__target = team
-        self.__recklessness = random.random(-.3,.3)
+        self.__target = self.__team.getRandomEnemy()
+        self.__recklessness = random.uniform(-.3,.3)
 
     def update(self,deltaTime):
         StarShipTemplate.update(self,deltaTime)
+        targetexists = False
+        for enemyteam in self.__team.getEnemies():
+            if enemyteam.shipInTeam(self.__target):
+                targetexists = True
 
-        if self.__team.shipInTeam(self.__target) and self.__target.getHealth()/2 < (self.getHealth()+self.__recklessness):
-            pass
+        if (not self.__target) or (not targetexists):
+            self.__target = self.__team.getRandomEnemy()
+
+        enemyexists = False
+        for enemyteam in self.__team.getEnemies():
+            if enemyteam.shipInTeam(self.__target):
+                enemyexists = True
+        if not self.__target:
+            enemyexists = False
+
+        if enemyexists and self.__target.getHealth()/2 < (self.getHealth()+self.__recklessness):
+              pass
+
         elif self.__target.getHealth()/2 > (self.getHealth()+self.__recklessness):
             self.pitch(random.uniform(-1,1))
             self.yaw(random.uniform(-1,1))
