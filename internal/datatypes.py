@@ -15,7 +15,8 @@ class Team:
         return ship in self.__ships
 
     def getRandomShip(self):
-        return self.__ships[random.randint(0,len(self.__ships)-1)]
+        if self.__ships:
+            return self.__ships[random.randint(0,len(self.__ships)-1)]
 
     def removeFromTeam(self,target):
         self.__ships.remove(target)

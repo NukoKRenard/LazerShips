@@ -132,6 +132,11 @@ class StarShipTemplate(ActorTemplate):
         elif self.__rr < -self.__maxrotatespeedc:
             self.__rr = -self.__maxrotatespeedc
 
+    def getThrottleSpeed(self):
+        return self.__dz
+    def getMaxSpeed(self):
+        return self.__maxspeed
+
     def throttleSpeed(self,speed):
         self.__dz += speed / 100
         if self.__dz > self.__maxspeed:
@@ -193,13 +198,29 @@ class AIShip(StarShipTemplate):
         if not self.__target:
             enemyexists = False
 
-        if enemyexists and self.__target.getHealth()/2 < (self.getHealth()+self.__recklessness):
-              pass
+        if enemyexists:
+            if self.__target.getHealth()/2 < (self.getHealth()+self.__recklessness):
+                 enemydir = glm.normalize((self.__target.getPos()*glm.vec4(0,0,0,1))-(self.getPos()*glm.vec4(0,0,0,1))).xyz
+                 enemydot = glm.dot((self.getRot()*glm.vec4(0,0,1,0)).xyz,enemydir)
 
-        elif self.__target.getHealth()/2 > (self.getHealth()+self.__recklessness):
-            self.pitch(random.uniform(-1,1))
-            self.yaw(random.uniform(-1,1))
-            self.roll(random.uniform(-1,1))
-            self.throttleSpeed(1)
-        else:
-            self.__target = self.__team.getRandomShip()
+              #Evasive maneuvers
+                 if enemydot < 0:
+                      self.pitch(random.uniform(-1, 1))
+                      self.yaw(random.uniform(-1, 1))
+                      self.roll(random.uniform(-1, 1))
+                      self.throttleSpeed(random.uniform(-.1, 1))
+                 #Follow target
+                 else:
+                      self.throttleSpeed(self.__target.getThrottleSpeed()/self.__target.getMaxSpeed())
+                  #Fire
+                 if enemydot > .8:
+                      pass
+
+            elif self.__target.getHealth()/2 > (self.getHealth()+self.__recklessness):
+                self.pitch(random.uniform(-1, 1))
+                self.yaw(random.uniform(-1, 1))
+                self.roll(random.uniform(-1, 1))
+                self.throttleSpeed(1)
+                self.__target = self.__team.getRandomEnemy()
+            else:
+                self.__target = self.__team.getRandomShip()
