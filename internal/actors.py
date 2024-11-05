@@ -78,7 +78,7 @@ class ActorTemplate:
 class StarShipTemplate(ActorTemplate):
     def __init__(self,
                  starshipCostumes,ID,
-                 minSpeed=0,maxSpeed=1,maxrotatespeed = 1/10,
+                 minSpeed=0,maxSpeed=5,maxrotatespeed = 1/10,
                  maxhealth = 1):
         ActorTemplate.__init__(self,starshipCostumes,ID)
         self.__health = maxhealth
@@ -108,8 +108,13 @@ class StarShipTemplate(ActorTemplate):
         self.__rr -= self.__rr / 100
 
         rotation = glm.mat4(1)
-        if self.__rp + self.__ry + self.__rr:
-            rotation *= glm.rotate(self.__maxrotatespeedc * (self.__rp + self.__ry + self.__rr), (self.__rp, self.__ry, self.__rr))
+        if self.__rp or self.__ry or self.__rr:
+
+            rm = self.__rp if self.__rp > 0 else -self.__rp
+            rm += self.__ry if self.__ry > 0 else -self.__ry
+            rm += self.__rr if self.__rr > 0 else -self.__rr
+
+            rotation *= glm.rotate(self.__maxrotatespeedc * rm, (self.__rp, self.__ry, self.__rr))
         self.rotate(rotation)
         self.translate(glm.translate((self.getRot() * glm.vec4(self.__dx, self.__dy, self.__dz, 0)).xyz))
 
@@ -172,7 +177,13 @@ class StarShipTemplate(ActorTemplate):
             self.__health = self.__maxhealth
     def getHealth(self):
         return self.__health
-    #
+
+    def getYawVelocity(self):
+        return self.__ry
+    def getPitchVelocity(self):
+        return self.__rp
+    def getRollVelocity(self):
+        return self.__rr
 
 class AIShip(StarShipTemplate):
     def __init__(self,shipmodel,ID,team):
@@ -194,33 +205,17 @@ class AIShip(StarShipTemplate):
         enemyexists = False
         for enemyteam in self.__team.getEnemies():
             if enemyteam.shipInTeam(self.__target):
-                enemyexists = True
+                enemyexisawts = True
         if not self.__target:
             enemyexists = False
 
-        if enemyexists:
-            if self.__target.getHealth()/2 < (self.getHealth()+self.__recklessness):
-                 enemydir = glm.normalize((self.__target.getPos()*glm.vec4(0,0,0,1))-(self.getPos()*glm.vec4(0,0,0,1))).xyz
-                 enemydot = glm.dot((self.getRot()*glm.vec4(0,0,1,0)).xyz,enemydir)
+        targetdir = glm.normalize((self.__target.getPos()*glm.vec4(0,0,0,1))-(self.getPos()*glm.vec4(0,0,0,1)))
+        localtargetdir = glm.inverse(self.getRot())*targetdir
 
-              #Evasive maneuvers
-                 if enemydot < 0:
-                      self.pitch(random.uniform(-1, 1))
-                      self.yaw(random.uniform(-1, 1))
-                      self.roll(random.uniform(-1, 1))
-                      self.throttleSpeed(random.uniform(-.1, 1))
-                 #Follow target
-                 else:
-                      self.throttleSpeed(self.__target.getThrottleSpeed()/self.__target.getMaxSpeed())
-                  #Fire
-                 if enemydot > .8:
-                      pass
+        targetup = self.__target.getRot()*glm.vec4(0,1,0,0)
+        localtargetup = glm.inverse(self.getRot())*targetup
 
-            elif self.__target.getHealth()/2 > (self.getHealth()+self.__recklessness):
-                self.pitch(random.uniform(-1, 1))
-                self.yaw(random.uniform(-1, 1))
-                self.roll(random.uniform(-1, 1))
-                self.throttleSpeed(1)
-                self.__target = self.__team.getRandomEnemy()
-            else:
-                self.__target = self.__team.getRandomShip()
+        if self.getID() == "commander tuvok":
+            self.yaw(localtargetdir.x-self.getYawVelocity())
+            self.pitch(-localtargetdir.y-self.getPitchVelocity())
+            self.roll(-localtargetup.x)

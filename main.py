@@ -5,6 +5,7 @@ This file is the entry point of the program. It holds the Program() class which 
 
 #Import and Initialize
 import pygame
+import math
 from OpenGL.GL import *
 import numpy
 import glm
@@ -34,32 +35,22 @@ class Program:
                                "levelobjects/texturedata/AvaxInterceptorColourMap.png",
                                "levelobjects/texturedata/AvaxInterceptorGlowMap.png", "avaxship-costume")
         self.assets.append(props.Skybox("skyboxes/spaceSkybox0", "level-skybox"))
-        """self.assets.append(
+        self.assets.append(
             actors.AIShip([copy.deepcopy(starship)],"commander tuvok",tx01Team)
         )
         tx01Team.addToTeam(self.assets[1])
-        self.assets[1].setpos(glm.translate((0,0,25)))
+        self.assets[1].setpos(glm.translate((25,15,5)))
+
         self.assets.append(
             actors.AIShip([copy.deepcopy(starship)],"Commander riker",avaxTeam)
         )
-        avaxTeam.addToTeam(self.assets[2])"""
+        self.assets[2].setpos(glm.translate((0,0,0)))
+        avaxTeam.addToTeam(self.assets[2])
         #self.maincam.attachToShip(self.assets[1])
 
         avaxTeam.declareWar(tx01Team)
 
-        for i in range(50):
-            self.assets.append(
-                actors.AIShip([copy.deepcopy(starship)], "Commander riker", avaxTeam)
-            )
-            self.assets[i+1].setpos(glm.translate((random.uniform(-50,30),random.uniform(-30,30),random.uniform(-30,30))))
-
         tx01Team.declareWar(avaxTeam)
-
-        for i in range(50):
-            self.assets.append(
-                actors.AIShip([copy.deepcopy(starship)], "Commander riker", tx01Team)
-            )
-            self.assets[i+51].setpos(glm.translate((random.uniform(-30,30),random.uniform(-30,30),random.uniform(-30,30))))
 
 
         #Action
@@ -78,10 +69,6 @@ class Program:
             else:
                 self.deltaTime = 0
 
-            #self.assets[1].setrot(glm.rotate(radians(90),(0,1,0)))
-
-
-
             #Events
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
@@ -94,6 +81,12 @@ class Program:
                 if asset.getIsActor():
                     asset.update(self.deltaTime)
 
+            self.assets[2].pitch(random.uniform(-1,1))
+            self.assets[2].yaw(random.uniform(-1,1))
+            self.assets[2].roll(random.uniform(-1,1))
+            self.assets[2].throttleSpeed(1)
+
+            self.assets[1].throttleSpeed(1)
 
             #Clears the screen for drawing
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
