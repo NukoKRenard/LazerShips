@@ -8,7 +8,7 @@ out vec3 texCoord;
 
 void main()
 {
-	gl_Position = (perspectiveMatrix*worldMatrix*vec4(aPos,0.0)).xyww;
+	gl_Position = (perspectiveMatrix*worldMatrix*vec4(aPos,0.0)).xyww*100;
 	texCoord = vec3(aPos.xy,aPos.z);
 
 }
