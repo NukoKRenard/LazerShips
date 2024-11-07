@@ -216,9 +216,9 @@ class AIShip(StarShipTemplate):
         targetup = self.__target.getRot()*glm.vec4(0,1,0,0)
         localtargetup = glm.inverse(self.getRot())*targetup
 
+        selfpos = self.getPos() * glm.vec4(0, 0, 0, 1)
         # This loop detects if any ships are too close (within a radius of 15) to this ship. If so it
         # stops chasing its target and instead tries to avoid a colission
-        selfpos = self.getPos()*glm.vec4(0, 0, 0, 1)
         for ship in self.__allships:
             if ship.getPos() != self.getPos():
                 shippos = ship.getPos() * glm.vec4(0, 0, 0, 1)

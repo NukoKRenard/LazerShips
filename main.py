@@ -23,7 +23,7 @@ class Program:
         pygame.init()
 
         #Display
-        self.maincam = camera.Camera(90)
+        self.maincam = camera.ShipCamera(90)
 
         # Entities
         self.assets = []
@@ -48,12 +48,12 @@ class Program:
         #avaxTeam.addToTeam(self.assets[2])
         #self.maincam.attachToShip(self.assets[1])
 
-        for i in range(10):
+        for i in range(100):
             ship = actors.AIShip([copy.deepcopy(starship)],str(i)+"avax",avaxTeam,self.ships)
             avaxTeam.addToTeam(ship)
             self.assets.append(ship)
 
-        for i in range(10):
+        for i in range(100):
             ship = actors.AIShip([copy.deepcopy(starship)],str(i)+"tx01",avaxTeam,self.ships)
             tx01Team.addToTeam(ship)
             self.assets.append(ship)
@@ -69,6 +69,7 @@ class Program:
         for ship in self.ships:
             ship.setpos(glm.translate(glm.vec3(random.randint(-100,100),random.randint(-100,100),random.randint(-100,100))))
 
+        self.maincam.attachToShip(self.ships[random.randint(0,len(self.ships)-1)])
 
         #Action
         #Assign key variables
