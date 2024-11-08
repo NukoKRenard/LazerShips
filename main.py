@@ -23,7 +23,7 @@ class Program:
         pygame.init()
 
         #Display
-        self.maincam = camera.ShipCamera(90)
+        self.maincam = camera.Camera(90)
 
         # Entities
         self.assets = []
@@ -48,12 +48,12 @@ class Program:
         #avaxTeam.addToTeam(self.assets[2])
         #self.maincam.attachToShip(self.assets[1])
 
-        for i in range(100):
+        for i in range(5):
             ship = actors.AIShip([copy.deepcopy(starship)],str(i)+"avax",avaxTeam,self.ships)
             avaxTeam.addToTeam(ship)
             self.assets.append(ship)
 
-        for i in range(100):
+        for i in range(5):
             ship = actors.AIShip([copy.deepcopy(starship)],str(i)+"tx01",avaxTeam,self.ships)
             tx01Team.addToTeam(ship)
             self.assets.append(ship)
@@ -69,7 +69,7 @@ class Program:
         for ship in self.ships:
             ship.setpos(glm.translate(glm.vec3(random.randint(-100,100),random.randint(-100,100),random.randint(-100,100))))
 
-        self.maincam.attachToShip(self.ships[random.randint(0,len(self.ships)-1)])
+        #self.maincam.attachToShip(self.ships[random.randint(0,len(self.ships)-1)])
 
         #Action
         #Assign key variables
@@ -77,7 +77,7 @@ class Program:
         pygame.mouse.set_visible(False)
         self.__clock = pygame.time.Clock()
         self.userhasquit = False
-        totalassets = self.assets
+        totalassets = len(self.assets)
         #Loop
         while not self.userhasquit:
             #Time
@@ -104,12 +104,8 @@ class Program:
             self.assets[2].roll(random.uniform(-1,1))
             self.assets[2].throttleSpeed(1)"""
 
-            for ship in self.ships:
-                ship.throttleSpeed(1)
-
-            for asset in totalassets:
-                if asset not in self.assets:
-                    raise Exception(f"Object {asset} missing from assets list...")
+            if len(self.assets) < totalassets:
+                raise Exception(f"Error: {totalassets-len(self.assets)} assets are missing.")
 
             #Clears the screen for drawing
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
