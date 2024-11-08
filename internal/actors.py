@@ -217,18 +217,37 @@ class AIShip(StarShipTemplate):
         localtargetup = glm.inverse(self.getRot())*targetup
 
         selfpos = self.getPos() * glm.vec4(0, 0, 0, 1)
+        if glm.length(selfpos) > 500:
+            targetdir = glm.normalize(-selfpos)
+            localtargetdir = glm.inverse(self.getRot())*targetdir
+
         # This loop detects if any ships are too close (within a radius of 15) to this ship. If so it
         # stops chasing its target and instead tries to avoid a colission
+        prevcolissiondetected = False
         for ship in self.__allships:
             if ship.getPos() != self.getPos():
                 shippos = ship.getPos() * glm.vec4(0, 0, 0, 1)
                 shipvec = shippos-selfpos
-                if glm.length(shipvec) < 40-(10*self.__recklessness):
-                    targetdir = glm.normalize(shipvec)
-                    localtargetdir = glm.inverse(self.getRot()) * targetdir
-                    localtargetdir = glm.vec4(-localtargetdir.x,-localtargetdir.y,-localtargetdir.z,0)
+                colissiondetected = glm.length(shipvec) < 40-(10*self.__recklessness)
+                if colissiondetected and not prevcolissiondetected:
+                    targetdir = shipvec/(glm.length(shipvec))
+                    prevcolissiondetected = True
+                elif colissiondetected and prevcolissiondetected:
+                    targetdir += shipvec/(glm.length(shipvec))
 
+        if prevcolissiondetected:
+            targetdir = glm.normalize(targetdir)
+            localtargetdir = glm.inverse(self.getRot()) * targetdir
+            localtargetdir = glm.vec4(-localtargetdir.x, -localtargetdir.y, -localtargetdir.z, 0)
 
-        self.yaw(localtargetdir.x-self.getYawVelocity()-random.uniform(-.1,1))
-        self.pitch(-localtargetdir.y-self.getPitchVelocity()-random.uniform(-.1,1))
-        self.roll(-localtargetup.x-random.uniform(-.1,1))
+        if not prevcolissiondetected:
+            self.yaw(localtargetdir.x-self.getYawVelocity()-random.uniform(-.3,.3))
+            self.pitch(-localtargetdir.y-self.getPitchVelocity()-random.uniform(-.3,.3))
+            self.roll(-localtargetup.x-self.getRollVelocity()-random.uniform(-.3,.3))
+        else:
+            self.yaw(localtargetdir.x-self.getYawVelocity())
+            self.pitch(-localtargetdir.y-self.getPitchVelocity())
+            self.roll(-localtargetup.x-self.getRollVelocity())
+
+        if self.getPos()*self.getRot()*self.getScale()*glm.scale((2,2,2)) == self.getPos()*self.getRot()*self.getScale():
+            raise Exception(f"Error ship {self.getID()} matrix is {self.getPos()*self.getRot()*self.getScale()}")

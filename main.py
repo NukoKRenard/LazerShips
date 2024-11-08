@@ -77,7 +77,7 @@ class Program:
         pygame.mouse.set_visible(False)
         self.__clock = pygame.time.Clock()
         self.userhasquit = False
-
+        totalassets = self.assets
         #Loop
         while not self.userhasquit:
             #Time
@@ -106,6 +106,10 @@ class Program:
 
             for ship in self.ships:
                 ship.throttleSpeed(1)
+
+            for asset in totalassets:
+                if asset not in self.assets:
+                    raise Exception(f"Object {asset} missing from assets list...")
 
             #Clears the screen for drawing
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
