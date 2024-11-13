@@ -23,7 +23,7 @@ class Program:
         pygame.init()
 
         #Display
-        self.maincam = camera.Camera(90)
+        self.maincam = camera.ShipCamera(90)
 
         # Entities
         self.assets = []
@@ -32,29 +32,32 @@ class Program:
         avaxTeam = datatypes.Team("Avax", {}, {})
         tx01Team = datatypes.Team("TX-01", {}, {})
 
-        starship = props.Model("levelobjects/AvaxInterceptor.obj",
-                               "levelobjects/texturedata/AvaxInterceptorColourMap.png",
-                               "levelobjects/texturedata/AvaxInterceptorGlowMap.png", "avaxship-costume")
+        blueteam_ship = props.Model("levelobjects/Starship.obj",
+                               "levelobjects/texturedata/StarshipColourMapBlue.png",
+                               "levelobjects/texturedata/StarshipRoughnessGlowmap.png", "blueteam-costume")
+        redteam_ship = props.Model("levelobjects/Starship.obj",
+                                    "levelobjects/texturedata/StarshipColourMapRed.png",
+                                    "levelobjects/texturedata/StarshipRoughnessGlowmap.png", "redteam-costume")
         self.assets.append(props.Skybox("skyboxes/spaceSkybox0", "level-skybox"))
         """self.assets.append(
-            actors.AIShip([copy.deepcopy(starship)],"commander tuvok",tx01Team,self.ships)
+            actors.AIShip([copy.deepcopy(blueteam_ship)],"commander tuvok",tx01Team,self.ships)
         )"""
         #tx01Team.addToTeam(self.assets[1])
 
         """self.assets.append(
-            actors.AIShip([copy.deepcopy(starship)],"Commander riker",avaxTeam,self.ships)
+            actors.AIShip([copy.deepcopy(blueteam_ship)],"Commander riker",avaxTeam,self.ships)
         )"""
         #self.assets[2].setpos(glm.translate((0,0,0)))
         #avaxTeam.addToTeam(self.assets[2])
         #self.maincam.attachToShip(self.assets[1])
 
         for i in range(5):
-            ship = actors.AIShip([copy.deepcopy(starship)],str(i)+"avax",avaxTeam,self.ships)
+            ship = actors.AIShip([copy.deepcopy(blueteam_ship)],str(i)+"avax",avaxTeam,self.ships)
             avaxTeam.addToTeam(ship)
             self.assets.append(ship)
 
         for i in range(5):
-            ship = actors.AIShip([copy.deepcopy(starship)],str(i)+"tx01",avaxTeam,self.ships)
+            ship = actors.AIShip([copy.deepcopy(redteam_ship)],str(i)+"tx01",tx01Team,self.ships)
             tx01Team.addToTeam(ship)
             self.assets.append(ship)
 
@@ -69,7 +72,7 @@ class Program:
         for ship in self.ships:
             ship.setpos(glm.translate(glm.vec3(random.randint(-100,100),random.randint(-100,100),random.randint(-100,100))))
 
-        #self.maincam.attachToShip(self.ships[random.randint(0,len(self.ships)-1)])
+        self.maincam.attachToShip(self.ships[random.randint(0,len(self.ships)-1)])
 
         #Action
         #Assign key variables

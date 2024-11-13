@@ -11,6 +11,7 @@ from math import *
 import copy
 import random
 
+from OpenGL.wrapper import none_or_pass
 from pygame.transform import rotate
 
 
@@ -78,7 +79,7 @@ class ActorTemplate:
 class StarShipTemplate(ActorTemplate):
     def __init__(self,
                  starshipCostumes,ID,
-                 minSpeed=0,maxSpeed=10,maxrotatespeed = 1/10,
+                 minSpeed=0,maxSpeed=50,maxrotatespeed = 1/10,
                  maxhealth = 1):
         ActorTemplate.__init__(self,starshipCostumes,ID)
         self.__health = maxhealth
@@ -146,8 +147,8 @@ class StarShipTemplate(ActorTemplate):
         self.__dz += speed / 100
         if self.__dz > self.__maxspeed:
             self.__dz = self.__maxspeed
-        elif self.__dz < self.__minspeed:
-            self.__dz = self.__minspeed
+        elif self.__dz < -self.__minspeed:
+            self.__dz = -self.__minspeed
     def strafe(self,speed):
         self.__dx += speed / 60
         if self.__dx > self.__maxspeed/2:
@@ -161,14 +162,12 @@ class StarShipTemplate(ActorTemplate):
         elif self.__dy < -self.__maxspeed/2:
             self.__dy = -self.__maxspeed / 2
 
-    def damage(self,points):
+    def damage(self,points,attacker=None):
         if points < 0:
             raise Exception(f"Starship recieved {points} damage, damage points can not be negative.")
         self.__health -= points
-        if self.__health <= 0:
-            return True
-        else:
-            return False
+        if attacker != None:
+            self.__target = attacker
     def heal(self,points):
         if points < 0:
             raise Exception(f"Starship recieved {points} healing, healing points can not be negative.")
@@ -228,7 +227,7 @@ class AIShip(StarShipTemplate):
             if ship.getPos() != self.getPos():
                 shippos = ship.getPos() * glm.vec4(0, 0, 0, 1)
                 shipvec = shippos-selfpos
-                colissiondetected = glm.length(shipvec) < 70-(10*self.__recklessness)
+                colissiondetected = glm.length(shipvec) < 50-(10*self.__recklessness)
                 if colissiondetected and closestshipdistance == -1:
                     closestshipdistance = glm.length(shipvec)
                     targetdir = shipvec/(glm.length(shipvec))
@@ -257,4 +256,13 @@ class AIShip(StarShipTemplate):
         if self.getPos()*self.getRot()*self.getScale()*glm.scale((2,2,2)) == self.getPos()*self.getRot()*self.getScale():
             raise Exception(f"Error ship {self.getID()} matrix is {self.getPos()*self.getRot()*self.getScale()}")
 
-        print(self.getPos(), self.getRot(),self.getScale())
+        selfdir = self.getRot() * glm.vec4(0, 0, 1, 1)
+        if glm.dot(targetdir.xyz, selfdir.xyz) > .8:
+            self.fire()
+
+        #print(self.getPos(), self.getRot(),self.getScale())
+    def fire(self):
+        targetdir = glm.normalize((self.__target.getPos()*glm.vec4(0,0,0,1))-(self.getPos()*glm.vec4(0,0,0,1)))
+        selfdir = self.getRot()*glm.vec4(0,0,1,1)
+        if glm.dot(targetdir.xyz,selfdir.xyz) > .9:
+            self.__target.damage(.1,self)
