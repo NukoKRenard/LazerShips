@@ -23,8 +23,8 @@ if %ERRORLEVEL% NEQ 0 {
     goto begin
 }
 
+goto eof
+
 :packageerror
 echo "Error occured when installing packages. Please install them manually..."
 pause
-
-:exit
