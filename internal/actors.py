@@ -168,6 +168,7 @@ class StarShipTemplate(ActorTemplate):
         self.__health -= points
         if attacker != None:
             self.__target = attacker
+        print(f"{self.getID()}: {self.__health}H")
     def heal(self,points):
         if points < 0:
             raise Exception(f"Starship recieved {points} healing, healing points can not be negative.")
@@ -265,4 +266,4 @@ class AIShip(StarShipTemplate):
         targetdir = glm.normalize((self.__target.getPos()*glm.vec4(0,0,0,1))-(self.getPos()*glm.vec4(0,0,0,1)))
         selfdir = self.getRot()*glm.vec4(0,0,1,1)
         if glm.dot(targetdir.xyz,selfdir.xyz) > .9:
-            self.__target.damage(.1,self)
+            self.__target.damage(.01,self)
