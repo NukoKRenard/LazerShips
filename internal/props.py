@@ -11,19 +11,24 @@ import pygame
 import numpy
 import glm
 
+#This is a basic model, everything you see on screen are props or costumes (costumes are props connected to actors.)
 class Model:
     def __init__(self, ObjFilePath, ColourMapPath, GlowMapPath, ID, shaderID = 0, directXTexture = True):
+        #Props move using matrix math.
         self.__translation = glm.mat4(1)
         self.__rotation = glm.mat4(1)
         self.__scale = glm.mat4(1)
 
-        self.mousebuttondownlastframe = False
         self.__shaderID = shaderID
         self.__ID = ID
         objData = []
+
+        #Opens the file and read it
         with open(ObjFilePath, 'r') as objFile:
             objData = objFile.readlines()
 
+        #The following code is to parse the file into a program useable format.
+        #Temporary lists that hold different vertex attributes. These will be moved into the vertexdata list when the indexdata is read.
         vertpos = []
         normpos = []
         texpos = []
@@ -31,6 +36,7 @@ class Model:
         vertexdata = []
         maxindex = 0
         indexdata = []
+        #This list holds any indecies that have already been made. It is used so that we don't have to load new vertexes, and can just reuse old ones.
         alreadymadevertdata = []
 
         #Reads all of the verticies, normals, faces, and texture coords in the .obj file and then stores them in the vertex and index data lists.
@@ -64,13 +70,16 @@ class Model:
             elif databit.startswith('f'):
                 databitlist = databit.split()[1:]
                 for face in databitlist:
+                    #This if statement tests if we already have added that vertex into the vertexdata list (Some polygons shader vertexes with others, by using less vertexes our program becomes more efficient.)
                     if face.strip() not in alreadymadevertdata:
                         alreadymadevertdata.append(face.strip())
 
-
+                        #Splits the index data into its positional, texture, and normal data.
                         indexes = face.split('/')
+                        #Adds all of the found vertecies into the temporary vertexdata variable.
                         for vert in vertpos[int(indexes[0]) - 1]:
                             vertexdata.append(vert)
+                        #Adds all of the found normal data into the temporary normaldata variable. If the normals are not found it will append an empty value to avoid crashes.
                         try:
                             for norm in normpos[int(indexes[2]) - 1]:
                                 vertexdata.append(norm)
@@ -80,6 +89,7 @@ class Model:
                             vertexdata.append(0.0)
                             vertexdata.append(0.0)
                             print(f"Normal for face {databitlist} was not found.")
+                        #Adds all of the found texture data into the temporary texturedata variable. If the textures are not found it will append an empty value to avoid crashes.
                         try:
                             for tex in texpos[int(indexes[1]) - 1]:
                                 vertexdata.append(tex)
@@ -87,29 +97,35 @@ class Model:
                             vertexdata.append(0.0)
                             vertexdata.append(0.0)
                             print(f"Tex coord data for face {databitlist} was not found.")
+                        #Adds the new index to the indexdata list.
                         indexdata.append(maxindex)
+                        #Increments the index number so that the next index is 1 higher.
                         maxindex += 1
                     else:
+                        #If the face already exists, it locates its index value and adds it to the indexdata list.
                         indexdata.append(alreadymadevertdata.index(face))
 
-        #Converts the vertex and index arrays to a usable format.
+        #Converts the vertex and index arrays to a format useable by OpenGL.
         self.__vertexdata = numpy.array(vertexdata,dtype=numpy.float32)
         self.__indexdata = numpy.array(indexdata,dtype=numpy.uint32)
 
         #Generates the texture.
         self.texture = glGenTextures(1)
         glBindTexture(GL_TEXTURE_2D, self.texture)
+        #These are settings that must be set for OpenGL
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT)
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT)
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
-        textureData = pygame.image.load(ColourMapPath).convert_alpha()
+        #Loads the image and puts it in the texture.
+        textureData = pygame.image.load(ColourMapPath)
         textureData = pygame.transform.flip(textureData,False,directXTexture)
         image_width, image_height = textureData.get_rect().size
         image = pygame.image.tobytes(textureData,"RGBA")
         glTexImage2D(GL_TEXTURE_2D,0,GL_RGBA,image_width,image_height,0,GL_RGBA,GL_UNSIGNED_BYTE,image)
         glGenerateMipmap(GL_TEXTURE_2D)
 
+        #Loads the glow and roughness map and puts them in a seperate texture (These colours are not directly shown to the player, but are used in fragment shader calculations.)
         self.glow = glGenTextures(1)
         glBindTexture(GL_TEXTURE_2D, self.glow)
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT)
@@ -123,11 +139,14 @@ class Model:
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, image_width, image_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, image)
         glGenerateMipmap(GL_TEXTURE_2D)
 
+    #Get the props ID
     def getID(self):
         return self.__ID
+    #Only actors have update function. This method stops crashes by not allowing non actors to be updated.
     def getIsActor(self):
         return False
 
+    #Movement functions
     def translate(self,translation):
         self.__translation *= translation
     def setpos(self,position):
@@ -135,6 +154,7 @@ class Model:
     def getPos(self):
         return self.__translation;
 
+    #Rotation functions
     def rotate(self,angle):
         self.__rotation *= angle
     def setrot(self,rotation):
@@ -142,6 +162,7 @@ class Model:
     def getRot(self):
         return self.__rotation
 
+    #Scaling functions
     def resize(self,resize):
         self.__scale *= resize
     def setScale(self,size):
@@ -149,19 +170,23 @@ class Model:
     def getScale(self):
         return self.__scale
 
+    #Gets the value of the position, rotation, and scale rotation multiplied together.
     def getMatrix(self):
         return self.translation * self.rotation * self.scale
 
-
+    #Draws the object to the screen. This similar to the pygame sprite's draw function.
     def drawObj(self,worldMatrix,perspectiveMatrix,
                 shaderlist,
                 vertexbufferlist,
                 indexbufferlist,
                 parentMatrix=glm.vec4(1)
                 ):
+
+        #Binds the texture to the buffer to be sent to the shader.
         self.bindTexture()
         objMatrix = parentMatrix*(self.__translation * self.__rotation * self.__scale)
 
+        #Binds the shaderprogram and buffers. (Tells OpenGL that these are the shaders/buffers that we want to use to draw the ship)
         glDepthFunc(GL_LESS)
         glUseProgram(shaderlist[0])
         glBindBuffer(GL_ARRAY_BUFFER, shaderlist[0])
@@ -169,6 +194,7 @@ class Model:
         glBufferData(GL_ELEMENT_ARRAY_BUFFER, self.__indexdata.nbytes, self.__indexdata, GL_STATIC_DRAW)
         glBufferData(GL_ARRAY_BUFFER, self.__vertexdata.nbytes, self.__vertexdata, GL_STATIC_DRAW)
 
+        #Tells the shaders where certain attributes are in the vertexdata list.
         glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), c_void_p(0))
         glEnableVertexAttribArray(0)
         glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), c_void_p(12))
@@ -185,6 +211,7 @@ class Model:
         glUniform1i(glGetUniformLocation(shaderlist[0], 'colourMap'), 0)
         glUniform1i(glGetUniformLocation(shaderlist[0], "glowMap"), 1)
 
+        #Draws the prop to the screen.
         glDrawElements(GL_TRIANGLES, len(self.__indexdata), GL_UNSIGNED_INT, None)
 
     #A function to call to prepare the texture to be drawn.
@@ -194,18 +221,12 @@ class Model:
         glActiveTexture(GL_TEXTURE1)
         glBindTexture(GL_TEXTURE_2D, self.glow)
 
-    def getVertexData(self):
-        return self.__vertexdata
-    def getIndexData(self):
-        return self.__indexdata
-    def getShader(self):
-        return self.__shaderID
-    def getCostumeData(self):
-        return [self]
-
+#This is the skybox class that shows the space scene the ships all fight in.
 class Skybox:
     def __init__(self, texturepath,ID):
         self.__ID = ID
+
+        #Vertex data for a cube. This is what the skybox is put on.
         vertexdata = (
              1.0, 1.0, -1.0,
              1.0,-1.0, -1.0,
@@ -218,6 +239,7 @@ class Skybox:
 
         )
 
+        #Index data for the cube. This tells the shader how to use the vertex data.
         indexdata = (
             4,2,0,
             2,7,3,
@@ -233,9 +255,11 @@ class Skybox:
             4,0,1
         )
 
+        #Converts the vertex and index data into a format useable by OpenGL
         self.__vertexdata = numpy.array(vertexdata, dtype=numpy.float32)
         self.__indexdata = numpy.array(indexdata, dtype=numpy.uint32)
 
+        #The path to all of the textures for the cubemep of the skybox
         cubeimagefilepaths = (
             f"{texturepath}/right.png",
             f"{texturepath}/left.png",
@@ -245,6 +269,7 @@ class Skybox:
             f"{texturepath}/back.png"
         )
 
+        #Generates a cubemap texture
         self.texture = glGenTextures(1)
         glBindTexture(GL_TEXTURE_CUBE_MAP, self.texture)
         glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
@@ -253,6 +278,7 @@ class Skybox:
         glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE)
         glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE)
 
+        #Adds every face to the cubemap.
         for i in range(len(cubeimagefilepaths)):
             file = pygame.image.load(cubeimagefilepaths[i])
             filedata = pygame.image.tostring(file,"RGBA")
@@ -262,32 +288,30 @@ class Skybox:
             if not(filedata):
                 raise Exception(f"File {cubeimagefilepaths[i]} failed to load")
 
-            glTexImage2D(
-                GL_TEXTURE_CUBE_MAP_POSITIVE_X + i,
-                0,
-                GL_RGBA,
-                image_width,
-                image_height,
-                0,
-                GL_RGBA,
-                GL_UNSIGNED_BYTE,
-                filedata
-            )
+            #Loads the texture into the cubemap.
+            glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i,0,GL_RGBA,image_width,image_height,0,GL_RGBA,GL_UNSIGNED_BYTE,filedata)
+
+    #Get function for the ID of the prop.
     def getID(self):
         return self.__ID
 
+    #Draws the object to the screen.
     def drawObj(self, worldMatrix, perspectiveMatrix,
                 shaderlist,
                 vertexbufferlist,
                 indexbufferlist
                 ):
+
+        #Binds the textures to prepare to be drawn to the screen.
         self.bindTexture()
 
+        #Binds the shaderprogram and buffers. (Tells OpenGL that these are the shaders/buffers that we want to use to draw the skybox)
         glDepthFunc(GL_EQUAL)
         glUseProgram(shaderlist[1])
         glBindBuffer(GL_ARRAY_BUFFER, vertexbufferlist[1])
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexbufferlist[1])
 
+        #Tells the shader where the vertecies of the skybox are located.
         glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), c_void_p(0))
         glEnableVertexAttribArray(0)
 
@@ -300,18 +324,36 @@ class Skybox:
                            glm.value_ptr(perspectiveMatrix))
         glUniform1i(glGetUniformLocation(shaderlist[1], 'skyboxTexture'), 0)
 
+        #Draws the skybox to the screen.
         glDrawElements(GL_TRIANGLES, len(self.__indexdata), GL_UNSIGNED_INT, None)
 
     def getIsActor(self):
         return False
-    def bindTexture(self):
-        glActiveTexture(GL_TEXTURE0)
+
+    #Bind the skyboxes textures to the buffers to prepare them for drawing. The skybox texture can also be used in reflections, which is why there is an option to bind it to a different buffer.
+    def bindTexture(self,buffer=GL_TEXTURE0):
+        glActiveTexture(buffer)
         glBindTexture(GL_TEXTURE_CUBE_MAP, self.texture)
-    def getVertexData(self):
-        return self.__vertexdata
-    def getIndexData(self):
-        return self.__indexdata
-    def getShader(self):
-        return 1
-    def getCostumeData(self):
-        return [self]
+
+class LazerBeam:
+    def __init__(self, ID, startpos,endpos,colour):
+        self.__isvisible = False
+
+        #Props move using matrix math.
+        self.__translation = glm.mat4(1)
+        self.__rotation = glm.mat4(1)
+        self.__scale = glm.mat4(1)
+
+        self.__colour = colour
+        self.__ID = ID
+
+    def drawObj(self):
+        if self.__isvisible:
+            glDepthFunc(GL_LESS)
+
+    def setvisible(self):
+        self.__isvisible = True
+    def setnotvisible(self):
+        self.__isvisible = False
+    def getIsActor(self):
+        return False

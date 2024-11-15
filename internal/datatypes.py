@@ -5,12 +5,14 @@ This file contains datatypes for the game.
 
 import random
 
+#The team class for all of the ships
 class Team:
     def __init__(self,teamname,ships,enemyteams):
         self.__name = teamname
         self.__ships = list(ships)
         self.__enemies = list(enemyteams)
 
+    #Tests if the inputted ship is part of a team.
     def shipInTeam(self,ship):
         return ship in self.__ships
 

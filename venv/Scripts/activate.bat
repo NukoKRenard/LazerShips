@@ -1,4 +1,4 @@
-@set "VIRTUAL_ENV=C:\Users\342450046\PycharmProjects\3DGame\venv"
+@set "VIRTUAL_ENV=C:\Users\Skyle\OneDrive\Desktop\Code\In progress\3DGame\venv"
 
 @set "VIRTUAL_ENV_PROMPT="
 @if NOT DEFINED VIRTUAL_ENV_PROMPT (

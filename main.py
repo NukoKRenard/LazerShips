@@ -4,6 +4,9 @@ This file is the entry point of the program. It holds the Program() class which 
 """
 
 #Import and Initialize
+
+import internal.globalvariables as progvar
+
 import pygame
 import math
 from OpenGL.GL import *
@@ -23,14 +26,20 @@ class Program:
         pygame.init()
 
         #Display
-        self.maincam = camera.ShipCamera(90)
+        #The camera handles the screen and drawing functions.
+        self.maincam = camera.Camera(90)
 
         # Entities
+        #The self.assets list is used for drawing to the screen. If something needs to be shown on screen it needs to be here.
         self.assets = []
+        progvar.ASSETS = self.assets
+        #The self.ships list is used for detecting colissions. It is faster to use a seperate list than to check every item in the draw list.
         self.ships = []
+        progvar.SHIPS = self.ships
 
-        avaxTeam = datatypes.Team("Avax", {}, {})
-        tx01Team = datatypes.Team("TX-01", {}, {})
+        #Teams are how the ships allignthemselves and choose their enemies. Each ship has a team, which is how they pick targets,
+        self.avaxTeam = datatypes.Team("Avax", {}, {})
+        self.tx01Team = datatypes.Team("TX-01", {}, {})
 
         blueteam_ship = props.Model("levelobjects/Starship.obj",
                                "levelobjects/texturedata/StarshipColourMapBlue.png",
@@ -38,57 +47,53 @@ class Program:
         redteam_ship = props.Model("levelobjects/Starship.obj",
                                     "levelobjects/texturedata/StarshipColourMapRed.png",
                                     "levelobjects/texturedata/StarshipRoughnessGlowmap.png", "redteam-costume")
+        #Creates a skybox
         self.assets.append(props.Skybox("skyboxes/spaceSkybox0", "level-skybox"))
-        """self.assets.append(
-            actors.AIShip([copy.deepcopy(blueteam_ship)],"commander tuvok",tx01Team,self.ships)
-        )"""
-        #tx01Team.addToTeam(self.assets[1])
 
-        """self.assets.append(
-            actors.AIShip([copy.deepcopy(blueteam_ship)],"Commander riker",avaxTeam,self.ships)
-        )"""
-        #self.assets[2].setpos(glm.translate((0,0,0)))
-        #avaxTeam.addToTeam(self.assets[2])
-        #self.maincam.attachToShip(self.assets[1])
-
-        for i in range(5):
-            ship = actors.AIShip([copy.deepcopy(blueteam_ship)],str(i)+"avax",avaxTeam,self.ships)
-            avaxTeam.addToTeam(ship)
+        #Adds a number of ships for each team
+        for i in range(1):
+            ship = actors.AIShip([copy.deepcopy(blueteam_ship)],str(i)+"avax",self.avaxTeam,self.ships)
+            self.avaxTeam.addToTeam(ship)
+            self.assets.append(ship)
+        for i in range(1):
+            ship = actors.AIShip([copy.deepcopy(redteam_ship)],str(i)+"tx01",self.tx01Team,self.ships)
+            self.tx01Team.addToTeam(ship)
             self.assets.append(ship)
 
-        for i in range(5):
-            ship = actors.AIShip([copy.deepcopy(redteam_ship)],str(i)+"tx01",tx01Team,self.ships)
-            tx01Team.addToTeam(ship)
-            self.assets.append(ship)
+        #These two functions cause the teams to add the other to their enemy list. This allows all of the ships in the team to start fighting.
+        self.avaxTeam.declareWar(self.tx01Team)
+        self.tx01Team.declareWar(self.avaxTeam)
 
-        avaxTeam.declareWar(tx01Team)
-
-        tx01Team.declareWar(avaxTeam)
-
+        #This checks all of the assets in the self.assets list, and if it is a ship type it adds them to the self.ships type
+        #NOTE: This will be updated to include player controlled ships when those are implimented.
         for asset in self.assets:
             if isinstance(asset,actors.AIShip):
                 self.ships.append(asset)
 
+        #Randomly sets the position of all of the ships.
         for ship in self.ships:
             ship.setpos(glm.translate(glm.vec3(random.randint(-100,100),random.randint(-100,100),random.randint(-100,100))))
 
-        self.maincam.attachToShip(self.ships[random.randint(0,len(self.ships)-1)])
+        #self.maincam.attachToShip(self.ships[random.randint(0,len(self.ships)-1)])
 
         #Action
         #Assign key variables
+        #The self.deltaTime variable is used to change speeds on framerate. It allows for continuity in the case of lag.
         self.deltaTime = 1/60
         pygame.mouse.set_visible(False)
         self.__clock = pygame.time.Clock()
         self.userhasquit = False
-        totalassets = len(self.assets)
+        #This variable is only for debugging. It will be removed before release.
+
         #Loop
         while not self.userhasquit:
             #Time
             self.__clock.tick(60)
+            #This modifies the delta time variable based on the framerate,
             if (self.__clock.get_fps() / 60) != 0:
                 self.deltaTime = 1 / (self.__clock.get_fps() / 60)
             else:
-                self.deltaTime = 0
+                self.deltaTime = 1
 
             #Events
             for event in pygame.event.get():
@@ -102,20 +107,14 @@ class Program:
                 if asset.getIsActor():
                     asset.update(self.deltaTime)
 
-            """self.assets[2].pitch(random.uniform(-1,1))
-            self.assets[2].yaw(random.uniform(-1,1))
-            self.assets[2].roll(random.uniform(-1,1))
-            self.assets[2].throttleSpeed(1)"""
-
-            if len(self.assets) < totalassets:
-                raise Exception(f"Error: {totalassets-len(self.assets)} assets are missing.")
+            #This is only for debugging, it will be removed afterwards.
 
             #Clears the screen for drawing
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
             #Updates the cameras position based on userinput
             #NOTE as of this stage userinput is crude. Movement directions to not account for the look direction.
             self.maincam.updateCamera(self.deltaTime)
-            #This function loops through all of the objects in the prop list and draws them with their drawObj() function
+            #This function loops through all of the objects in the self.assets list and draws them with their drawObj() function
             self.maincam.renderScene(self.assets)
             pygame.display.flip()
 

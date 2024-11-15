@@ -32,7 +32,7 @@ export-env {
       }
     }
 
-    let virtual_env = 'C:\Users\342450046\PycharmProjects\3DGame\venv'
+    let virtual_env = 'C:\Users\Skyle\OneDrive\Desktop\Code\In progress\3DGame\venv'
     let bin = 'Scripts'
 
     let is_windows = ($nu.os-info.family) == 'windows'

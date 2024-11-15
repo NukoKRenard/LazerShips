@@ -84,13 +84,41 @@ class Camera:
         self.skyboxIndexBuffer = glGenBuffers(1)
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, self.skyboxIndexBuffer)
 
+        vertexsrc = ""
+        with open("shaders/starshipVertex.glsl", 'r') as vertexshaderfile:
+            vertexsrc = vertexshaderfile.read()
+        # Opens, reads, and stores the uncompiled fragment shader in a string.
+        fragmentsrc = ""
+        with open("shaders/starshipFragment.glsl", 'r') as fragmentshaderfile:
+            fragmentsrc = fragmentshaderfile.read()
+
+        self.lazerShader = glCreateProgram()
+
+        shader_vert = glCreateShader(GL_VERTEX_SHADER)
+        glShaderSource(shader_vert, vertexsrc)
+        glCompileShader(shader_vert)
+
+        shader_frag = glCreateShader(GL_FRAGMENT_SHADER)
+        glShaderSource(shader_frag, fragmentsrc)
+        glCompileShader(shader_frag)
+
+        glAttachShader(self.lazerShader, shader_vert)
+        glAttachShader(self.lazerShader, shader_frag)
+        glLinkProgram(self.lazerShader)
+
+        self.lazerVertexBuffer = glGenBuffers(1)
+        glBindBuffer(GL_ARRAY_BUFFER, self.lazerVertexBuffer)
+
+        self.lazerIndexBuffer = glGenBuffers(1)
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, self.lazerIndexBuffer)
+
     def renderScene(self,scenemodeldata):
         worldMatrix = glm.lookAt(glm.vec3(self.position), glm.vec3(self.position + self.direction), glm.vec3(self.up))
         for object in scenemodeldata:
             object.drawObj(worldMatrix,self.perspectiveMatrix,
-                           (self.starshipShader,self.skyboxShader),
-                           (self.starshipVertexBuffer,self.skyboxVertexBuffer),
-                           (self.starshipIndexBuffer,self.skyboxIndexBuffer)
+                           (self.starshipShader,self.skyboxShader,self.lazerShader),
+                           (self.starshipVertexBuffer,self.skyboxVertexBuffer,self.lazerVertexBuffer),
+                           (self.starshipIndexBuffer,self.skyboxIndexBuffer,self.lazerIndexBuffer)
                            )
 
     #Calculates camera movement, Very crude as of right now
