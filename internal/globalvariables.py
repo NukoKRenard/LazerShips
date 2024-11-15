@@ -8,3 +8,6 @@ ASSETS = []
 
 global SHIPS
 SHIPS = []
+
+global SKYBOX
+SKYBOX = None

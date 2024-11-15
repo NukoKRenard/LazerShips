@@ -11,6 +11,7 @@ import pygame
 from math import *
 import copy
 import random
+import internal.props as props
 
 #This is a template for an actor type. Sets some default values.
 class ActorTemplate:
@@ -73,7 +74,10 @@ class ActorTemplate:
                 costume.update(deltaTime)
 
     def removefromgame(self):
-        progvar.ASSETS.remove(self)
+        try:
+            progvar.ASSETS.remove(self)
+        except:
+            print(f"{self} not in assets list.")
 
 #This is a template for a starship type. Has some basic movement functions
 class StarShipTemplate(ActorTemplate):
@@ -191,7 +195,10 @@ class StarShipTemplate(ActorTemplate):
         return self.__rr
     def removefromgame(self):
         ActorTemplate.removefromgame(self)
-        progvar.SHIPS.remove(self)
+        try:
+            progvar.SHIPS.remove(self)
+        except:
+            print(f"{self} not in ships list...")
 
 class AIShip(StarShipTemplate):
     def __init__(self,shipmodel,ID,team,shipsinplay):
@@ -201,9 +208,10 @@ class AIShip(StarShipTemplate):
         self.__recklessness = random.uniform(0,1)
         self.__allships = shipsinplay
 
+        self.__lazer = props.Lazer((self.getPos()*glm.vec4(0,0,0,1)).xyz,(self.getPos()*glm.vec4(0,0,0,1)).xyz,self.__team.getTeamColor())
+        progvar.ASSETS.append(self.__lazer)
+
     def update(self,deltaTime):
-        if self == None:
-            print("ERROR WHEN REMOVING OBJECTS")
         StarShipTemplate.update(self,deltaTime)
         targetexists = False
         for enemyteam in self.__team.getEnemies():
@@ -221,6 +229,8 @@ class AIShip(StarShipTemplate):
             enemyexists = False
 
         if self.__target:
+            self.__lazer.setpos((self.getPos() * glm.vec4(0, 0, 0, 1)).xyz,(self.__target.getPos() * glm.vec4(0, 0, 0, 1)).xyz)
+
             targetdir = glm.normalize((self.__target.getPos()*glm.vec4(0,0,0,1))-(self.getPos()*glm.vec4(0,0,0,1)))
             localtargetdir = glm.inverse(self.getRot())*targetdir
 
@@ -232,13 +242,15 @@ class AIShip(StarShipTemplate):
                 targetdir = glm.normalize(-selfpos)
                 localtargetdir = glm.inverse(self.getRot())*targetdir
 
-            # This loop detects if any ships are too close (within a radius of 15) to this ship. If so it
+            # This loop detects if any ships are too close (within a radius of 50) to this ship. If so it
             # stops chasing its target and instead tries to avoid a colission
             closestshipdistance = -1
             for ship in self.__allships:
                 if ship.getPos() != self.getPos():
                     shippos = ship.getPos() * glm.vec4(0, 0, 0, 1)
                     shipvec = shippos-selfpos
+                    if glm.length(shipvec) < 10:
+                        self.damage(1)
                     colissiondetected = glm.length(shipvec) < 50-(10*self.__recklessness)
                     if colissiondetected and closestshipdistance == -1:
                         closestshipdistance = glm.length(shipvec)
@@ -269,20 +281,28 @@ class AIShip(StarShipTemplate):
                 raise Exception(f"Error ship {self.getID()} matrix is {self.getPos()*self.getRot()*self.getScale()}")
 
             selfdir = self.getRot() * glm.vec4(0, 0, 1, 1)
-            if glm.dot(targetdir.xyz, selfdir.xyz) > .8:
+            if glm.dot(targetdir.xyz, selfdir.xyz) > .95:
+                self.__lazer.setvisible()
                 self.fire()
+            else:
+                self.__lazer.setnotvisible()
+        else:
+            self.__lazer.setnotvisible()
 
     def fire(self):
         targetdir = glm.normalize((self.__target.getPos()*glm.vec4(0,0,0,1))-(self.getPos()*glm.vec4(0,0,0,1)))
         selfdir = self.getRot()*glm.vec4(0,0,1,1)
 
-        if glm.dot(targetdir.xyz,selfdir.xyz) > .9:
-            if self.__target.damage(.01,self):
+        if glm.dot(targetdir.xyz,selfdir.xyz) > .95:
+            if self.__target.damage(.001,self):
                 self.__target = self.__team.getRandomEnemy()
 
     def damage(self,points,attacker=None):
+        if attacker != None:
+            self.__target = attacker
         if StarShipTemplate.damage(self,points,attacker):
             self.__team.removeFromTeam(self)
+            self.__lazer.removefromgame()
             del self
             return True
         return False

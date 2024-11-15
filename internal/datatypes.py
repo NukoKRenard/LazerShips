@@ -4,13 +4,15 @@ This file contains datatypes for the game.
 """
 
 import random
+import glm
 
 #The team class for all of the ships
 class Team:
-    def __init__(self,teamname,ships,enemyteams):
+    def __init__(self,teamname,ships,enemyteams,teamcolor):
         self.__name = teamname
         self.__ships = list(ships)
         self.__enemies = list(enemyteams)
+        self.__color = glm.vec3(teamcolor)
 
     #Tests if the inputted ship is part of a team.
     def shipInTeam(self,ship):
@@ -21,7 +23,10 @@ class Team:
             return self.__ships[random.randint(0,len(self.__ships)-1)]
 
     def removeFromTeam(self,target):
-        self.__ships.remove(target)
+        try:
+            self.__ships.remove(target)
+        except:
+            print(f"{target} not in team {self}...")
 
     def addToTeam(self,target):
         self.__ships.append(target)
@@ -48,3 +53,5 @@ class Team:
                 enemy = self.__enemies[random.randint(0,len(self.__enemies)-1)].getRandomShip()
             return enemy
         return None
+    def getTeamColor(self):
+        return self.__color

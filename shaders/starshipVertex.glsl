@@ -9,10 +9,12 @@ uniform mat4 worldMatrix;
 
 out vec4 normal;
 out vec2 texCoord;
+out vec3 position;
 
 void main()
 {
 	gl_Position = perspectiveMatrix*worldMatrix*objMatrix*vec4(aPos,1.0);
 	normal = (objMatrix*vec4(aNorm,0.0))/length((objMatrix*vec4(aNorm,0.0)));
 	texCoord = vec2(aTexPos.x,aTexPos.y);
+	position = aPos;
 }

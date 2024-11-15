@@ -28,7 +28,7 @@ class Program:
 
         #Display
         #The camera handles the screen and drawing functions.
-        self.maincam = camera.Camera(90)
+        self.maincam = camera.ShipCamera(90)
 
         # Entities
         #The self.assets list is used for drawing to the screen. If something needs to be shown on screen it needs to be here.
@@ -39,8 +39,8 @@ class Program:
         progvar.SHIPS = self.ships
 
         #Teams are how the ships allignthemselves and choose their enemies. Each ship has a team, which is how they pick targets,
-        self.avaxTeam = datatypes.Team("Avax", {}, {})
-        self.tx01Team = datatypes.Team("TX-01", {}, {})
+        self.avaxTeam = datatypes.Team("Avax", {}, {},(.5, 1, 1))
+        self.tx01Team = datatypes.Team("TX-01", {}, {},(1, 1, .5))
 
         blueteam_ship = props.Model("levelobjects/Starship.obj",
                                "levelobjects/texturedata/StarshipColourMapBlue.png",
@@ -49,17 +49,19 @@ class Program:
                                     "levelobjects/texturedata/StarshipColourMapRed.png",
                                     "levelobjects/texturedata/StarshipRoughnessGlowmap.png", "redteam-costume")
         #Creates a skybox
-        self.assets.append(props.Skybox("skyboxes/spaceSkybox0", "level-skybox"))
+        progvar.SKYBOX = props.Skybox("skyboxes/spaceSkybox0", "level-skybox")
+        self.assets.append(progvar.SKYBOX)
 
         #Adds a number of ships for each team
-        for i in range(5):
+        for i in range(20):
             ship = actors.AIShip([copy.deepcopy(blueteam_ship)],str(i)+"avax",self.avaxTeam,self.ships)
             self.avaxTeam.addToTeam(ship)
             self.assets.append(ship)
-        for i in range(5):
+        for i in range(20):
             ship = actors.AIShip([copy.deepcopy(redteam_ship)],str(i)+"tx01",self.tx01Team,self.ships)
             self.tx01Team.addToTeam(ship)
             self.assets.append(ship)
+
 
         #These two functions cause the teams to add the other to their enemy list. This allows all of the ships in the team to start fighting.
         self.avaxTeam.declareWar(self.tx01Team)
@@ -75,10 +77,7 @@ class Program:
         for ship in self.ships:
             ship.setpos(glm.translate(glm.vec3(random.randint(-100,100),random.randint(-100,100),random.randint(-100,100))))
 
-        #self.maincam.attachToShip(self.ships[random.randint(0,len(self.ships)-1)])
-        laser = props.Lazer("test-lazer", glm.vec3(0, 0, 0), glm.vec3(10, 10, 0), (0, 1, 1))
-        laser.setvisible()
-        self.assets.append(laser)
+        self.maincam.attachToShip(self.ships[random.randint(0,len(self.ships)-1)])
 
         #Action
         #Assign key variables
@@ -110,8 +109,9 @@ class Program:
             for asset in self.assets:
                 if asset.getIsActor():
                     asset.update(self.deltaTime)
-                    if isinstance(asset,props.Lazer):
-                        asset.setpos(end=glm.vec3(0, sin(time.time()) * 10, 0))
+
+            if self.maincam.getShip() not in self.ships:
+                self.maincam.attachToShip(self.ships[random.randint(0,len(self.ships)-1)])
 
             #Clears the screen for drawing
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)

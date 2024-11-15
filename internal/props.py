@@ -4,15 +4,19 @@ This file holds code for props that can be drawn to a scene. Props are static ob
 They can move and rotate, but have no way of doing this on their own and it can only be done through a external function.
 Props would make up static parts of the game, like the level geomery, or a tree, something to show, but with no behavior.
 """
-
+import internal.globalvariables as progvar
 from OpenGL.GL import *
 from ctypes import c_void_p
 import pygame
 import numpy
 import glm
 
+class Object:
+    def removefromgame(self):
+        progvar.ASSETS.remove(self)
+
 #This is a basic model, everything you see on screen are props or costumes (costumes are props connected to actors.)
-class Model:
+class Model(Object):
     def __init__(self, ObjFilePath, ColourMapPath, GlowMapPath, ID, shaderID = 0, directXTexture = True):
         #Props move using matrix math.
         self.__translation = glm.mat4(1)
@@ -184,6 +188,8 @@ class Model:
 
         #Binds the texture to the buffer to be sent to the shader.
         self.bindTexture()
+        #Binds the skybox texture (This is used to calculate reflections.)
+        progvar.SKYBOX.bindTexture(GL_TEXTURE2)
         objMatrix = parentMatrix*(self.__translation * self.__rotation * self.__scale)
 
         #Binds the shaderprogram and buffers. (Tells OpenGL that these are the shaders/buffers that we want to use to draw the ship)
@@ -210,6 +216,7 @@ class Model:
         glUniform3f(glGetUniformLocation(shaderlist[0], "lightPos"), 1, 0, 0)
         glUniform1i(glGetUniformLocation(shaderlist[0], 'colourMap'), 0)
         glUniform1i(glGetUniformLocation(shaderlist[0], "glowMap"), 1)
+        glUniform1i(glGetUniformLocation(shaderlist[0], "reflection"), 2)
 
         #Draws the prop to the screen.
         glDrawElements(GL_TRIANGLES, len(self.__indexdata), GL_UNSIGNED_INT, None)
@@ -222,7 +229,7 @@ class Model:
         glBindTexture(GL_TEXTURE_2D, self.glow)
 
 #This is the skybox class that shows the space scene the ships all fight in.
-class Skybox:
+class Skybox(Object):
     def __init__(self, texturepath,ID):
         self.__ID = ID
 
@@ -335,15 +342,14 @@ class Skybox:
         glActiveTexture(buffer)
         glBindTexture(GL_TEXTURE_CUBE_MAP, self.texture)
 
-class Lazer:
-    def __init__(self, ID, startpos,endpos,colour):
+class Lazer(Object):
+    def __init__(self, startpos, endpos, color):
         self.__isvisible = False
 
         self.__start = glm.vec4(startpos,1)
         self.__end = glm.vec4(endpos,1)
 
-        self.__colour = glm.vec3(colour)
-        self.__ID = ID
+        self.__color = glm.vec3(color)
 
     def drawObj(self, worldMatrix, perspectiveMatrix,
                 shaderlist,
@@ -351,48 +357,51 @@ class Lazer:
                 indexbufferlist,
                 parentMatrix=glm.vec4(1)
                 ):
+        if self.__isvisible:
+            campos = glm.inverse(worldMatrix)*glm.vec4(0,0,0,1)
+            if campos == glm.vec4(0,0,0,1):
+                campos = glm.vec4(0,0,0.1,1)
+            corneroffset = glm.normalize(glm.cross(self.__end.xyz-self.__start.xyz,campos.xyz))
+            corneroffset /= 5#modifies the width of the lazer
+            vertexdata = (
+                self.__start.x+corneroffset.x, self.__start.y+corneroffset.y, self.__start.z+corneroffset.z,
+                self.__start.x-corneroffset.x, self.__start.y-corneroffset.y, self.__start.z-corneroffset.z,
+                self.__end.x+corneroffset.x, self.__end.y+corneroffset.y,self.__end.z+corneroffset.z,
+                self.__end.x-corneroffset.x, self.__end.y-corneroffset.y, self.__end.z-corneroffset.z
+            )
 
-        campos = glm.inverse(worldMatrix)*glm.vec4(0,0,0,1)
-        corneroffset = glm.normalize(glm.cross(self.__end.xyz-self.__start.xyz,campos.xyz))
-        vertexdata = (
-            self.__start.x+corneroffset.x, self.__start.y+corneroffset.y, self.__start.z+corneroffset.z,
-            self.__start.x-corneroffset.x, self.__start.y-corneroffset.y, self.__start.z-corneroffset.z,
-            self.__end.x+corneroffset.x, self.__end.y+corneroffset.y,self.__end.z+corneroffset.z,
-            self.__end.x-corneroffset.x, self.__end.y-corneroffset.y, self.__end.z-corneroffset.z
-        )
+            # Index data for the cube. This tells the shader how to use the vertex data.
+            indexdata = (
+                0,1,2,
+                1,3,2
+            )
 
-        # Index data for the cube. This tells the shader how to use the vertex data.
-        indexdata = (
-            0,1,2,
-            1,3,2
-        )
+            # Converts the vertex and index data into a format useable by OpenGL
+            self.__vertexdata = numpy.array(vertexdata, dtype=numpy.float32)
+            self.__indexdata = numpy.array(indexdata, dtype=numpy.uint32)
 
-        # Converts the vertex and index data into a format useable by OpenGL
-        self.__vertexdata = numpy.array(vertexdata, dtype=numpy.float32)
-        self.__indexdata = numpy.array(indexdata, dtype=numpy.uint32)
+            # Binds the shaderprogram and buffers. (Tells OpenGL that these are the shaders/buffers that we want to use to draw the ship)
+            glDepthFunc(GL_LESS)
+            glUseProgram(shaderlist[2])
+            glBindBuffer(GL_ARRAY_BUFFER, vertexbufferlist[2])
+            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexbufferlist[2])
+            glBufferData(GL_ELEMENT_ARRAY_BUFFER, self.__indexdata.nbytes, self.__indexdata, GL_STATIC_DRAW)
+            glBufferData(GL_ARRAY_BUFFER, self.__vertexdata.nbytes, self.__vertexdata, GL_STATIC_DRAW)
 
-        # Binds the shaderprogram and buffers. (Tells OpenGL that these are the shaders/buffers that we want to use to draw the ship)
-        glDepthFunc(GL_LESS)
-        glUseProgram(shaderlist[2])
-        glBindBuffer(GL_ARRAY_BUFFER, vertexbufferlist[2])
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexbufferlist[2])
-        glBufferData(GL_ELEMENT_ARRAY_BUFFER, self.__indexdata.nbytes, self.__indexdata, GL_STATIC_DRAW)
-        glBufferData(GL_ARRAY_BUFFER, self.__vertexdata.nbytes, self.__vertexdata, GL_STATIC_DRAW)
+            # Tells the shaders where certain attributes are in the vertexdata list.
+            glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), c_void_p(0))
+            glEnableVertexAttribArray(0)
 
-        # Tells the shaders where certain attributes are in the vertexdata list.
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), c_void_p(0))
-        glEnableVertexAttribArray(0)
+            glUniformMatrix4fv(glGetUniformLocation(shaderlist[2], "perspectiveMatrix"), 1, GL_FALSE,
+                            glm.value_ptr(perspectiveMatrix))
+            glUniformMatrix4fv(glGetUniformLocation(shaderlist[2], "worldMatrix"), 1, GL_FALSE,
+                            glm.value_ptr(worldMatrix))
 
-        glUniformMatrix4fv(glGetUniformLocation(shaderlist[2], "perspectiveMatrix"), 1, GL_FALSE,
-                           glm.value_ptr(perspectiveMatrix))
-        glUniformMatrix4fv(glGetUniformLocation(shaderlist[2], "worldMatrix"), 1, GL_FALSE,
-                           glm.value_ptr(worldMatrix))
+            glUniform3fv(glGetUniformLocation(shaderlist[2],"color"), 1,
+                        glm.value_ptr(self.__color))
 
-        glUniform3fv(glGetUniformLocation(shaderlist[2],"color"), 1,
-                     glm.value_ptr(self.__colour))
-
-        # Draws the prop to the screen.
-        glDrawElements(GL_TRIANGLES, len(self.__indexdata), GL_UNSIGNED_INT, None)
+            # Draws the prop to the screen.
+            glDrawElements(GL_TRIANGLES, len(self.__indexdata), GL_UNSIGNED_INT, None)
 
 
     def setvisible(self):
