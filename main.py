@@ -2,6 +2,7 @@
 10/19/2024
 This file is the entry point of the program. It holds the Program() class which is how the game is run.
 """
+import time
 
 #Import and Initialize
 
@@ -51,11 +52,11 @@ class Program:
         self.assets.append(props.Skybox("skyboxes/spaceSkybox0", "level-skybox"))
 
         #Adds a number of ships for each team
-        for i in range(1):
+        for i in range(5):
             ship = actors.AIShip([copy.deepcopy(blueteam_ship)],str(i)+"avax",self.avaxTeam,self.ships)
             self.avaxTeam.addToTeam(ship)
             self.assets.append(ship)
-        for i in range(1):
+        for i in range(5):
             ship = actors.AIShip([copy.deepcopy(redteam_ship)],str(i)+"tx01",self.tx01Team,self.ships)
             self.tx01Team.addToTeam(ship)
             self.assets.append(ship)
@@ -75,6 +76,9 @@ class Program:
             ship.setpos(glm.translate(glm.vec3(random.randint(-100,100),random.randint(-100,100),random.randint(-100,100))))
 
         #self.maincam.attachToShip(self.ships[random.randint(0,len(self.ships)-1)])
+        laser = props.Lazer("test-lazer", glm.vec3(0, 0, 0), glm.vec3(10, 10, 0), (0, 1, 1))
+        laser.setvisible()
+        self.assets.append(laser)
 
         #Action
         #Assign key variables
@@ -106,8 +110,8 @@ class Program:
             for asset in self.assets:
                 if asset.getIsActor():
                     asset.update(self.deltaTime)
-
-            #This is only for debugging, it will be removed afterwards.
+                    if isinstance(asset,props.Lazer):
+                        asset.setpos(end=glm.vec3(0, sin(time.time()) * 10, 0))
 
             #Clears the screen for drawing
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)

@@ -85,11 +85,11 @@ class Camera:
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, self.skyboxIndexBuffer)
 
         vertexsrc = ""
-        with open("shaders/starshipVertex.glsl", 'r') as vertexshaderfile:
+        with open("shaders/lazerVertex.glsl", 'r') as vertexshaderfile:
             vertexsrc = vertexshaderfile.read()
         # Opens, reads, and stores the uncompiled fragment shader in a string.
         fragmentsrc = ""
-        with open("shaders/starshipFragment.glsl", 'r') as fragmentshaderfile:
+        with open("shaders/lazerFragment.glsl", 'r') as fragmentshaderfile:
             fragmentsrc = fragmentshaderfile.read()
 
         self.lazerShader = glCreateProgram()
@@ -139,6 +139,10 @@ class Camera:
             self.position.x += 1/30*deltaTime
         if pygame.key.get_pressed()[pygame.K_d]:
             self.position.x -= 1/30*deltaTime
+        if pygame.key.get_pressed()[pygame.K_LSHIFT]:
+            self.position.y += 1/30*deltaTime
+        if pygame.key.get_pressed()[pygame.K_LCTRL]:
+            self.position.y -= 1 / 30 * deltaTime
 
 class ShipCamera(Camera):
     def __init__(self,fovy,parentship=None):

@@ -335,21 +335,65 @@ class Skybox:
         glActiveTexture(buffer)
         glBindTexture(GL_TEXTURE_CUBE_MAP, self.texture)
 
-class LazerBeam:
+class Lazer:
     def __init__(self, ID, startpos,endpos,colour):
         self.__isvisible = False
 
-        #Props move using matrix math.
-        self.__translation = glm.mat4(1)
-        self.__rotation = glm.mat4(1)
-        self.__scale = glm.mat4(1)
+        self.__start = glm.vec4(startpos,1)
+        self.__end = glm.vec4(endpos,1)
 
-        self.__colour = colour
+        self.__colour = glm.vec3(colour)
         self.__ID = ID
 
-    def drawObj(self):
-        if self.__isvisible:
-            glDepthFunc(GL_LESS)
+    def drawObj(self, worldMatrix, perspectiveMatrix,
+                shaderlist,
+                vertexbufferlist,
+                indexbufferlist,
+                parentMatrix=glm.vec4(1)
+                ):
+
+        campos = glm.inverse(worldMatrix)*glm.vec4(0,0,0,1)
+        corneroffset = glm.normalize(glm.cross(self.__end.xyz-self.__start.xyz,campos.xyz))
+        vertexdata = (
+            self.__start.x+corneroffset.x, self.__start.y+corneroffset.y, self.__start.z+corneroffset.z,
+            self.__start.x-corneroffset.x, self.__start.y-corneroffset.y, self.__start.z-corneroffset.z,
+            self.__end.x+corneroffset.x, self.__end.y+corneroffset.y,self.__end.z+corneroffset.z,
+            self.__end.x-corneroffset.x, self.__end.y-corneroffset.y, self.__end.z-corneroffset.z
+        )
+
+        # Index data for the cube. This tells the shader how to use the vertex data.
+        indexdata = (
+            0,1,2,
+            1,3,2
+        )
+
+        # Converts the vertex and index data into a format useable by OpenGL
+        self.__vertexdata = numpy.array(vertexdata, dtype=numpy.float32)
+        self.__indexdata = numpy.array(indexdata, dtype=numpy.uint32)
+
+        # Binds the shaderprogram and buffers. (Tells OpenGL that these are the shaders/buffers that we want to use to draw the ship)
+        glDepthFunc(GL_LESS)
+        glUseProgram(shaderlist[2])
+        glBindBuffer(GL_ARRAY_BUFFER, vertexbufferlist[2])
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexbufferlist[2])
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, self.__indexdata.nbytes, self.__indexdata, GL_STATIC_DRAW)
+        glBufferData(GL_ARRAY_BUFFER, self.__vertexdata.nbytes, self.__vertexdata, GL_STATIC_DRAW)
+
+        # Tells the shaders where certain attributes are in the vertexdata list.
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), c_void_p(0))
+        glEnableVertexAttribArray(0)
+
+        glUniformMatrix4fv(glGetUniformLocation(shaderlist[2], "perspectiveMatrix"), 1, GL_FALSE,
+                           glm.value_ptr(perspectiveMatrix))
+        glUniformMatrix4fv(glGetUniformLocation(shaderlist[2], "worldMatrix"), 1, GL_FALSE,
+                           glm.value_ptr(worldMatrix))
+
+        glUniform3fv(glGetUniformLocation(shaderlist[2],"color"), 1,
+                     glm.value_ptr(self.__colour))
+
+        # Draws the prop to the screen.
+        glDrawElements(GL_TRIANGLES, len(self.__indexdata), GL_UNSIGNED_INT, None)
+
 
     def setvisible(self):
         self.__isvisible = True
@@ -357,3 +401,9 @@ class LazerBeam:
         self.__isvisible = False
     def getIsActor(self):
         return False
+
+    def setpos(self,start=None,end=None):
+        if start != None:
+            self.__start = glm.vec4(start,1)
+        if end != None:
+            self.__end = glm.vec4(end,1)

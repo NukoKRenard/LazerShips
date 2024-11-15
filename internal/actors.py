@@ -272,7 +272,6 @@ class AIShip(StarShipTemplate):
             if glm.dot(targetdir.xyz, selfdir.xyz) > .8:
                 self.fire()
 
-        #print(self.getPos(), self.getRot(),self.getScale())
     def fire(self):
         targetdir = glm.normalize((self.__target.getPos()*glm.vec4(0,0,0,1))-(self.getPos()*glm.vec4(0,0,0,1)))
         selfdir = self.getRot()*glm.vec4(0,0,1,1)
@@ -282,7 +281,6 @@ class AIShip(StarShipTemplate):
                 self.__target = self.__team.getRandomEnemy()
 
     def damage(self,points,attacker=None):
-        print(f"HIT! {self.getHealth()}")
         if StarShipTemplate.damage(self,points,attacker):
             self.__team.removeFromTeam(self)
             del self
