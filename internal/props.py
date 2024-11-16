@@ -13,7 +13,10 @@ import glm
 
 class Object:
     def removefromgame(self):
-        progvar.ASSETS.remove(self)
+        try:
+            progvar.ASSETS.remove(self)
+        except:
+            print(f"{self} not in assets list.")
 
 #This is a basic model, everything you see on screen are props or costumes (costumes are props connected to actors.)
 class Model(Object):

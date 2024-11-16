@@ -18,7 +18,7 @@ void main()
     vec4 camera_pos = inverse(worldMatrix)*vec4(0,0,0,1);
     vec4 basetexture = texture(colourMap,texCoord);
     vec4 littexture = clamp(basetexture*dot(normal.xyz,lightPos),0,1) + texture(colourMap,texCoord)*texture(glowMap,texCoord).g;
-    vec4 highlightedtexture = littexture+vec4(1-clamp(pow(dot(camera_pos.xyz-position,reflect(lightPos,normal.xyz)),8),0,1))*texture(glowMap,texCoord).r;
+    vec4 highlightedtexture = littexture + vec4(clamp(pow(dot(normalize(camera_pos.xyz-position),normalize(reflect(lightPos,normal.xyz))),10),0,1))*texture(glowMap,texCoord).r;
     vec4 reflectedtexture = highlightedtexture+clamp(texture(reflection,reflect(camera_pos.xyz-position,normal.xyz))*texture(glowMap,texCoord).r,0,1);
 
     fragColor = reflectedtexture;

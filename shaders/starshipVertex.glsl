@@ -16,5 +16,5 @@ void main()
 	gl_Position = perspectiveMatrix*worldMatrix*objMatrix*vec4(aPos,1.0);
 	normal = (objMatrix*vec4(aNorm,0.0))/length((objMatrix*vec4(aNorm,0.0)));
 	texCoord = vec2(aTexPos.x,aTexPos.y);
-	position = aPos;
+	position = (objMatrix*vec4(aPos,1)).xyz;
 }

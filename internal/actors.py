@@ -193,6 +193,8 @@ class StarShipTemplate(ActorTemplate):
         return self.__rp
     def getRollVelocity(self):
         return self.__rr
+    def getVelocity(self):
+        return glm.vec3(self.__dx,self.__dy,self.__dz)
     def removefromgame(self):
         ActorTemplate.removefromgame(self)
         try:
@@ -251,6 +253,7 @@ class AIShip(StarShipTemplate):
                     shipvec = shippos-selfpos
                     if glm.length(shipvec) < 10:
                         self.damage(1)
+                        self.__target.damage(1)
                     colissiondetected = glm.length(shipvec) < 50-(10*self.__recklessness)
                     if colissiondetected and closestshipdistance == -1:
                         closestshipdistance = glm.length(shipvec)
@@ -275,7 +278,7 @@ class AIShip(StarShipTemplate):
                 self.yaw(localtargetdir.x-self.getYawVelocity())
                 self.pitch(-localtargetdir.y-self.getPitchVelocity())
                 self.roll(-localtargetup.x-self.getRollVelocity())
-                self.throttleSpeed(closestshipdistance/(60-(10*self.__recklessness)))
+                self.throttleSpeed(closestshipdistance/(40-(10*self.__recklessness)))
 
             if self.getPos()*self.getRot()*self.getScale()*glm.scale((2,2,2)) == self.getPos()*self.getRot()*self.getScale():
                 raise Exception(f"Error ship {self.getID()} matrix is {self.getPos()*self.getRot()*self.getScale()}")

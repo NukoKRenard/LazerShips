@@ -20,7 +20,11 @@ class Team:
 
     def getRandomShip(self):
         if self.__ships:
-            return self.__ships[random.randint(0,len(self.__ships)-1)]
+            if len(self.__ships) > 1:
+                return self.__ships[random.randint(0, len(self.__ships) - 1)]
+
+            else:
+                return self.__ships[0]
 
     def removeFromTeam(self,target):
         try:
@@ -50,7 +54,7 @@ class Team:
                 enemy = self.__enemies[random.randint(0,len(self.__enemies)-1)].getRandomShip()
 
             else:
-                enemy = self.__enemies[random.randint(0,len(self.__enemies)-1)].getRandomShip()
+                enemy = self.__enemies[0].getRandomShip()
             return enemy
         return None
     def getTeamColor(self):
