@@ -83,7 +83,7 @@ class ActorTemplate:
 class StarShipTemplate(ActorTemplate):
     def __init__(self,
                  starshipCostumes,ID,
-                 minSpeed=0,maxSpeed=50,maxrotatespeed = 1/10,
+                 minSpeed=0,maxSpeed=1,maxrotatespeed = 1/10,
                  maxhealth = 1):
         ActorTemplate.__init__(self,starshipCostumes,ID)
         self.__health = maxhealth
@@ -248,13 +248,15 @@ class AIShip(StarShipTemplate):
             # stops chasing its target and instead tries to avoid a colission
             closestshipdistance = -1
             for ship in self.__allships:
+                speeddif = glm.dot(self.getVelocity(),ship.getVelocity())
+                speeddif = speeddif if speeddif > 1 else 1
                 if ship.getPos() != self.getPos():
                     shippos = ship.getPos() * glm.vec4(0, 0, 0, 1)
                     shipvec = shippos-selfpos
                     if glm.length(shipvec) < 10:
                         self.damage(1)
                         self.__target.damage(1)
-                    colissiondetected = glm.length(shipvec) < 50-(10*self.__recklessness)
+                    colissiondetected = glm.length(shipvec) < (50*speeddif)-(10*self.__recklessness)
                     if colissiondetected and closestshipdistance == -1:
                         closestshipdistance = glm.length(shipvec)
                         targetdir = shipvec/(glm.length(shipvec))

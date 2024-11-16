@@ -53,11 +53,11 @@ class Program:
         self.assets.append(progvar.SKYBOX)
 
         #Adds a number of ships for each team
-        for i in range(20):
+        for i in range(100):
             ship = actors.AIShip([copy.deepcopy(blueteam_ship)],str(i)+"avax",self.avaxTeam,self.ships)
             self.avaxTeam.addToTeam(ship)
             self.assets.append(ship)
-        for i in range(20):
+        for i in range(100):
             ship = actors.AIShip([copy.deepcopy(redteam_ship)],str(i)+"tx01",self.tx01Team,self.ships)
             self.tx01Team.addToTeam(ship)
             self.assets.append(ship)
@@ -75,7 +75,7 @@ class Program:
 
         #Randomly sets the position of all of the ships.
         for ship in self.ships:
-            ship.setpos(glm.translate(glm.vec3(random.randint(-100,100),random.randint(-100,100),random.randint(-100,100))))
+            ship.setpos(glm.translate(glm.vec3(random.randint(-200,200),random.randint(-200,200),random.randint(-200,200))))
 
         self.maincam.attachToShip(self.ships[random.randint(0,len(self.ships)-1)])
 
@@ -112,6 +112,12 @@ class Program:
 
             if self.maincam.getShip() not in self.ships:
                 self.maincam.attachToShip(self.ships[random.randint(0,len(self.ships)-1)])
+
+            largestdist = 0
+            for ship in self.ships:
+                shipdist = glm.length((ship.getPos()*glm.vec4(0,0,0,1)).xyz)
+                largestdist = shipdist if shipdist > largestdist else largestdist
+            print(largestdist)
 
             #Clears the screen for drawing
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
