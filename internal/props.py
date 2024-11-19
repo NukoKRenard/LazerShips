@@ -419,3 +419,14 @@ class Lazer(Object):
             self.__start = glm.vec4(start,1)
         if end != None:
             self.__end = glm.vec4(end,1)
+
+class ScreenSpaceSprite:
+    def __init__(self,imagefile):
+        self.image = pygame.image.load(imagefile)
+    def drawObj(self, worldMatrix, perspectiveMatrix,
+                shaderlist,
+                vertexbufferlist,
+                indexbufferlist,
+                parentMatrix=glm.vec4(1)
+                ):
+        pass

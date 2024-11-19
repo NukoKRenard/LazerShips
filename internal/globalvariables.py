@@ -11,3 +11,7 @@ SHIPS = []
 
 global SKYBOX
 SKYBOX = None
+
+#The self.deltaTime variable is used to change speeds on framerate. It allows for continuity in the case of lag.
+global DELTATIME
+DELTATIME = 1

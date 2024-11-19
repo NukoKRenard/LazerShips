@@ -59,3 +59,10 @@ class Team:
         return None
     def getTeamColor(self):
         return self.__color
+    def getAllEnemies(self):
+        totalenemies = []
+        for enemyteam in self.__enemies:
+            totalenemies.extend(enemyteam.getAllMembers())
+        return totalenemies
+    def getAllMembers(self):
+        return self.__ships

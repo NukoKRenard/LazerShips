@@ -53,11 +53,11 @@ class Program:
         self.assets.append(progvar.SKYBOX)
 
         #Adds a number of ships for each team
-        for i in range(100):
+        for i in range(10):
             ship = actors.AIShip([copy.deepcopy(blueteam_ship)],str(i)+"avax",self.avaxTeam,self.ships)
             self.avaxTeam.addToTeam(ship)
             self.assets.append(ship)
-        for i in range(100):
+        for i in range(10):
             ship = actors.AIShip([copy.deepcopy(redteam_ship)],str(i)+"tx01",self.tx01Team,self.ships)
             self.tx01Team.addToTeam(ship)
             self.assets.append(ship)
@@ -66,6 +66,11 @@ class Program:
         #These two functions cause the teams to add the other to their enemy list. This allows all of the ships in the team to start fighting.
         self.avaxTeam.declareWar(self.tx01Team)
         self.tx01Team.declareWar(self.avaxTeam)
+
+        #Adds the player:
+        self.player = self.avaxTeam.getRandomShip()
+        self.maincam.attachToShip(self.player)
+        self.player.disableAI()
 
         #This checks all of the assets in the self.assets list, and if it is a ship type it adds them to the self.ships type
         #NOTE: This will be updated to include player controlled ships when those are implimented.
@@ -77,12 +82,8 @@ class Program:
         for ship in self.ships:
             ship.setpos(glm.translate(glm.vec3(random.randint(-200,200),random.randint(-200,200),random.randint(-200,200))))
 
-        self.maincam.attachToShip(self.ships[random.randint(0,len(self.ships)-1)])
-
         #Action
         #Assign key variables
-        #The self.deltaTime variable is used to change speeds on framerate. It allows for continuity in the case of lag.
-        self.deltaTime = 1/60
         pygame.mouse.set_visible(False)
         self.__clock = pygame.time.Clock()
         self.userhasquit = False
@@ -94,36 +95,43 @@ class Program:
             self.__clock.tick(60)
             #This modifies the delta time variable based on the framerate,
             if (self.__clock.get_fps() / 60) != 0:
-                self.deltaTime = 1 / (self.__clock.get_fps() / 60)
+                progvar.DELTATIME = 1 / (self.__clock.get_fps() / 60)
             else:
-                self.deltaTime = 1
+                progvar.DELTATIME = 1
+
+            # Deltatime can NOT ever equal zero or it would cause huge problems.
+            if progvar.DELTATIME == 0:
+                progvar.DELTATIME = 1
 
             #Events
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     self.userhasquit = True
                     break
-            events = pygame.event.get()
+                elif event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_EQUALS:
+                        self.player.switchtarget(1)
+                    elif event.key == pygame.K_MINUS:
+                        self.player.switchtarget(-1)
+                    print(f"Target switched to: {self.player.getTarget().getID()}")
+            if pygame.key.get_pressed()[pygame.K_SPACE]:
+                self.player.fire()
 
             #Refresh
             for asset in self.assets:
                 if asset.getIsActor():
-                    asset.update(self.deltaTime)
+                    asset.update()
 
-            if self.maincam.getShip() not in self.ships:
-                self.maincam.attachToShip(self.ships[random.randint(0,len(self.ships)-1)])
-
-            largestdist = 0
-            for ship in self.ships:
-                shipdist = glm.length((ship.getPos()*glm.vec4(0,0,0,1)).xyz)
-                largestdist = shipdist if shipdist > largestdist else largestdist
-            print(largestdist)
+            if self.player not in self.ships:
+                self.player = self.avaxTeam.getRandomShip()
+                self.maincam.attachToShip(self.player)
+                self.player.disableAI()
 
             #Clears the screen for drawing
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
             #Updates the cameras position based on userinput
             #NOTE as of this stage userinput is crude. Movement directions to not account for the look direction.
-            self.maincam.updateCamera(self.deltaTime)
+            self.maincam.updateCamera()
             #This function loops through all of the objects in the self.assets list and draws them with their drawObj() function
             self.maincam.renderScene(self.assets)
             pygame.display.flip()

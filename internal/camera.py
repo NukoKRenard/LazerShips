@@ -149,8 +149,8 @@ class ShipCamera(Camera):
         Camera.__init__(self,fovy)
         self.__parentship = parentship
 
-    def updateCamera(self,deltaTime):
-        self.position = self.__parentship.getPos() * (self.__parentship.getRot() * glm.vec4(0, 10, -30, 1))
+    def updateCamera(self):
+        self.position = self.__parentship.getPos() * (self.__parentship.getRot() * (glm.vec4(0, 10, -20, 1)-glm.vec4(self.__parentship.getVelocity()*5,0)))
         self.direction = self.__parentship.getRot() * glm.vec4(0, 0, 1, 0)
         self.up = self.__parentship.getRot() * glm.vec4(0, 1, 0, 0)
 
