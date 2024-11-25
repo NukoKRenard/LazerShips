@@ -112,13 +112,41 @@ class Camera:
         self.lazerIndexBuffer = glGenBuffers(1)
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, self.lazerIndexBuffer)
 
+        vertexsrc = ""
+        with open("shaders/lazerVertex.glsl", 'r') as vertexshaderfile:
+            vertexsrc = vertexshaderfile.read()
+        # Opens, reads, and stores the uncompiled fragment shader in a string.
+        fragmentsrc = ""
+        with open("shaders/lazerFragment.glsl", 'r') as fragmentshaderfile:
+            fragmentsrc = fragmentshaderfile.read()
+
+        self.spriteShader = glCreateProgram()
+
+        shader_vert = glCreateShader(GL_VERTEX_SHADER)
+        glShaderSource(shader_vert, vertexsrc)
+        glCompileShader(shader_vert)
+
+        shader_frag = glCreateShader(GL_FRAGMENT_SHADER)
+        glShaderSource(shader_frag, fragmentsrc)
+        glCompileShader(shader_frag)
+
+        glAttachShader(self.spriteShader, shader_vert)
+        glAttachShader(self.spriteShader, shader_frag)
+        glLinkProgram(self.spriteShader)
+
+        self.spriteVertexBuffer = glGenBuffers(1)
+        glBindBuffer(GL_ARRAY_BUFFER, self.spriteVertexBuffer)
+
+        self.spriteIndexBuffer = glGenBuffers(1)
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, self.spriteIndexBuffer)
+
     def renderScene(self,scenemodeldata):
         worldMatrix = glm.lookAt(glm.vec3(self.position), glm.vec3(self.position + self.direction), glm.vec3(self.up))
         for object in scenemodeldata:
             object.drawObj(worldMatrix,self.perspectiveMatrix,
-                           (self.starshipShader,self.skyboxShader,self.lazerShader),
-                           (self.starshipVertexBuffer,self.skyboxVertexBuffer,self.lazerVertexBuffer),
-                           (self.starshipIndexBuffer,self.skyboxIndexBuffer,self.lazerIndexBuffer)
+                           (self.starshipShader,self.skyboxShader,self.lazerShader,self.spriteShader),
+                           (self.starshipVertexBuffer,self.skyboxVertexBuffer,self.lazerVertexBuffer,self.spriteVertexBuffer),
+                           (self.starshipIndexBuffer,self.skyboxIndexBuffer,self.lazerIndexBuffer,self.spriteIndexBuffer)
                            )
 
     #Calculates camera movement, Very crude as of right now
@@ -150,9 +178,10 @@ class ShipCamera(Camera):
         self.__parentship = parentship
 
     def updateCamera(self):
-        self.position = self.__parentship.getPos() * (self.__parentship.getRot() * (glm.vec4(0, 10, -20, 1)-glm.vec4(self.__parentship.getVelocity()*5,0)))
-        self.direction = self.__parentship.getRot() * glm.vec4(0, 0, 1, 0)
-        self.up = self.__parentship.getRot() * glm.vec4(0, 1, 0, 0)
+        if self.__parentship != None:
+            self.position = self.__parentship.getPos() * (self.__parentship.getRot() * (glm.vec4(0, 10, -20, 1)-glm.vec4(self.__parentship.getVelocity()*5,0)))
+            self.direction = self.__parentship.getRot() * glm.vec4(0, 0, 1, 0)
+            self.up = self.__parentship.getRot() * glm.vec4(0, 1, 0, 0)
 
     def attachToShip(self,target):
         self.__parentship = target
