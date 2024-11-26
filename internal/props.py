@@ -422,9 +422,9 @@ class Lazer(Object):
 
 class ScreenSpaceSprite:
     def __init__(self,imagefile):
-        self.__translation = glm.vec3(1)
-        self.__rotation = glm.vec3(1)
-        self.__scale = glm.vec3(1)
+        self.__translation = glm.mat4(1)
+        self.__rotation = glm.mat4(1)
+        self.__scale = glm.mat4(1)
 
         self.__texture = glGenTextures(1)
         glBindTexture(GL_TEXTURE_2D, self.__texture)
@@ -499,6 +499,7 @@ class ScreenSpaceSprite:
                 indexbufferlist,
                 parentMatrix=glm.vec4(1)
                 ):
+        objMatrix = self.__translation * self.__rotation * self.__scale
         panelvertecies = (
             -1.0,-1.0, 0.0,0.0,
             -1.0, 1.0, 0.0,1.0,
@@ -530,12 +531,10 @@ class ScreenSpaceSprite:
         glEnableVertexAttribArray(0)
         glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(GLfloat), c_void_p(8))
         glEnableVertexAttribArray(1)
-        """glUniformMatrix3fv(glGetUniformLocation(shaderlist[3], "objMatrix"), 1, GL_FALSE,
+        glUniformMatrix4fv(glGetUniformLocation(shaderlist[3], "objMatrix"), 1, GL_FALSE,
                            glm.value_ptr(objMatrix))
-        glUniformMatrix3fv(glGetUniformLocation(shaderlist[3], "perspectiveMatrix"), 1, GL_FALSE,
+        glUniformMatrix4fv(glGetUniformLocation(shaderlist[3], "perspectiveMatrix"), 1, GL_FALSE,
                            glm.value_ptr(perspectiveMatrix))
-        glUniformMatrix3fv(glGetUniformLocation(shaderlist[3], "worldMatrix"), 1, GL_FALSE,
-                           glm.value_ptr(worldMatrix))"""
         glUniform1i(glGetUniformLocation(shaderlist[3], "image"), 0)
 
         # Draws the prop to the screen.

@@ -113,11 +113,11 @@ class Camera:
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, self.lazerIndexBuffer)
 
         vertexsrc = ""
-        with open("shaders/lazerVertex.glsl", 'r') as vertexshaderfile:
+        with open("shaders/spriteVertex.glsl", 'r') as vertexshaderfile:
             vertexsrc = vertexshaderfile.read()
         # Opens, reads, and stores the uncompiled fragment shader in a string.
         fragmentsrc = ""
-        with open("shaders/lazerFragment.glsl", 'r') as fragmentshaderfile:
+        with open("shaders/spriteFragment.glsl", 'r') as fragmentshaderfile:
             fragmentsrc = fragmentshaderfile.read()
 
         self.spriteShader = glCreateProgram()
@@ -141,6 +141,8 @@ class Camera:
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, self.spriteIndexBuffer)
 
     def renderScene(self,scenemodeldata):
+        glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA)
+        glEnable(GL_BLEND)
         worldMatrix = glm.lookAt(glm.vec3(self.position), glm.vec3(self.position + self.direction), glm.vec3(self.up))
         for object in scenemodeldata:
             object.drawObj(worldMatrix,self.perspectiveMatrix,

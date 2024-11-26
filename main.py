@@ -34,7 +34,6 @@ class Program:
         #The self.assets list is used for drawing to the screen. If something needs to be shown on screen it needs to be here.
         self.assets = []
         progvar.ASSETS = self.assets
-        self.assets.append(props.ScreenSpaceSprite("levelobjects/texturedata/StarshipColourMapBlue.png"))
         #The self.ships list is used for detecting colissions. It is faster to use a seperate list than to check every item in the draw list.
         self.ships = []
         progvar.SHIPS = self.ships
@@ -51,18 +50,17 @@ class Program:
                                     "levelobjects/texturedata/StarshipRoughnessGlowmap.png", "redteam-costume")
         #Creates a skybox
         progvar.SKYBOX = props.Skybox("skyboxes/spaceSkybox0", "level-skybox")
-        #self.assets.append(progvar.SKYBOX)
+        self.assets.append(progvar.SKYBOX)
 
-        """#Adds a number of ships for each team
-        for i in range(10):
+        #Adds a number of ships for each team
+        for i in range(50):
             ship = actors.AIShip([copy.deepcopy(blueteam_ship)],str(i)+"avax",self.avaxTeam,self.ships)
             self.avaxTeam.addToTeam(ship)
             self.assets.append(ship)
-        for i in range(10):
+        for i in range(50):
             ship = actors.AIShip([copy.deepcopy(redteam_ship)],str(i)+"tx01",self.tx01Team,self.ships)
             self.tx01Team.addToTeam(ship)
             self.assets.append(ship)
-        """
 
 
         #These two functions cause the teams to add the other to their enemy list. This allows all of the ships in the team to start fighting.
@@ -72,7 +70,11 @@ class Program:
         #Adds the player:
         self.player = self.avaxTeam.getRandomShip()
         self.maincam.attachToShip(self.player)
-        #self.player.disableAI()
+        self.player.disableAI()
+
+        #Adds the targeting recitle
+        self.crosshair = props.ScreenSpaceSprite("levelobjects/sprites/crosshairenabled.png")
+        self.assets.append(self.crosshair)
 
         #This checks all of the assets in the self.assets list, and if it is a ship type it adds them to the self.ships type
         #NOTE: This will be updated to include player controlled ships when those are implimented.
@@ -127,7 +129,7 @@ class Program:
             if self.player not in self.ships:
                 self.player = self.avaxTeam.getRandomShip()
                 self.maincam.attachToShip(self.player)
-                #self.player.disableAI()
+                self.player.disableAI()
 
             #Clears the screen for drawing
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
@@ -136,7 +138,6 @@ class Program:
             self.maincam.updateCamera()
             #This function loops through all of the objects in the self.assets list and draws them with their drawObj() function
             self.maincam.renderScene(self.assets)
-            print(self.assets)
             pygame.display.flip()
 
 
