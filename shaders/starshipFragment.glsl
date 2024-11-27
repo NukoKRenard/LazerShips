@@ -10,7 +10,7 @@ uniform mat4 worldMatrix;
 uniform vec3 lightPos;
 //The coloured texture that we draw to the screen (ships have two, a red and blue texture)
 uniform sampler2D colourMap;
-//This texture defines how lighting should behave, what parts of the ship should glow (like engines), and wwhich parts should reflect more or less light. This data is passed through different colour channels.
+//This texture defines how lighting should behave, what parts of the ship should texture (like engines), and wwhich parts should reflect more or less light. This data is passed through different colour channels.
 uniform sampler2D glowMap;
 //This is the same cubemap we pass into the skybox. The only difference is we bind it into a different buffer.
 uniform samplerCube reflection;
@@ -29,7 +29,7 @@ void main()
     //This finds the base colour of the pixel due to its texutre (for example if the pixel were part of the engine flame it would appear orange)
     vec4 basetexture = texture(colourMap,texCoord);
     //This calculated the darkness value of the pixel based off of how close to the light it is facing (if it faces towards the light it would be bright, if it faces away from the light it will be dark.)
-    //This line will also add a glow to the texture, where (for example with the engine flame) we don't want them to darken with light as they would produce their own. Glow data is passed through the green channel.
+    //This line will also add a texture to the texture, where (for example with the engine flame) we don't want them to darken with light as they would produce their own. Glow data is passed through the green channel.
     vec4 littexture = clamp(basetexture*dot(normal.xyz,lightPos),0,1) + texture(colourMap,texCoord)*texture(glowMap,texCoord).g;
     //This calculates the white highlights in the texture. This is the white shine we see on points that reflect the light of the sun.
     //To calculate this we take the camera's position, reflect it across the surface of the ship, and find how close it is to the light source. The closer the brighter.

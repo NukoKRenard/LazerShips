@@ -133,7 +133,7 @@ class Model(Object):
         glTexImage2D(GL_TEXTURE_2D,0,GL_RGBA,image_width,image_height,0,GL_RGBA,GL_UNSIGNED_BYTE,image)
         glGenerateMipmap(GL_TEXTURE_2D)
 
-        #Loads the glow and roughness map and puts them in a seperate texture (These colours are not directly shown to the player, but are used in fragment shader calculations.)
+        #Loads the texture and roughness map and puts them in a seperate texture (These colours are not directly shown to the player, but are used in fragment shader calculations.)
         self.glow = glGenTextures(1)
         glBindTexture(GL_TEXTURE_2D, self.glow)
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT)
@@ -429,12 +429,12 @@ class Lazer(Object):
             self.__end = glm.vec4(end,1)
 
 class ScreenSpaceSprite:
-    def __init__(self,imagefile):
-        self.__translation = glm.mat4(1)
+    def __init__(self,image):
+        self.__translation = glm.translate((0,0,-1))
         self.__rotation = glm.mat4(1)
         self.__scale = glm.mat4(1)
 
-        self.image = pygame.image.load(imagefile)
+        self.changeImage(image)
     def drawObj(self, worldMatrix, perspectiveMatrix,
                 shaderlist,
                 vertexbufferlist,
@@ -442,12 +442,12 @@ class ScreenSpaceSprite:
                 parentMatrix=glm.vec4(1)
                 ):
 
-        objMatrix = parentMatrix * (self.__translation * self.__rotation * self.__scale)
+        objMatrix = (self.__translation * self.__rotation * self.__scale)
 
         vertexdata = (
             -1.0,-1.0,0.0,0.0,0.0,
             -1.0,1.0,0.0,0.0,1.0,
-            1.0, 1.0, 0.0,1.0,1.0,
+            1.0, 1.0,0.0,1.0,1.0,
             1.0,-1.0,0.0,1.0,0.0
         )
 
@@ -458,6 +458,8 @@ class ScreenSpaceSprite:
 
         self.__vertexdata = numpy.array(vertexdata, dtype=numpy.float32)
         self.__indexdata = numpy.array(indexdata, dtype=numpy.uint32)
+
+        self.bindTexture()
 
         # Binds the shaderprogram and buffers. (Tells OpenGL that these are the shaders/buffers that we want to use to draw the ship)
         glDepthFunc(GL_LESS)
@@ -475,8 +477,57 @@ class ScreenSpaceSprite:
                            glm.value_ptr(perspectiveMatrix))
         glUniformMatrix4fv(glGetUniformLocation(shaderlist[3], "objectMatrix"), 1, GL_FALSE,
                            glm.value_ptr(objMatrix))
+        glUniform1i(glGetUniformLocation(shaderlist[3],"image"),0)
 
         # Draws the prop to the screen.
         glDrawElements(GL_TRIANGLES, len(self.__indexdata), GL_UNSIGNED_INT, None)
     def getIsActor(self):
         return False
+    def changeImage(self, imagedata):
+        self.texture = glGenTextures(1)
+        glBindTexture(GL_TEXTURE_2D, self.texture)
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT)
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT)
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
+        image_width, image_height = imagedata.get_rect().size
+        image = pygame.image.tobytes(imagedata, "RGBA")
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, image_width, image_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, image)
+        glGenerateMipmap(GL_TEXTURE_2D)
+    def bindTexture(self):
+        glActiveTexture(GL_TEXTURE0)
+        glBindTexture(GL_TEXTURE_2D,self.texture)
+
+    # Movement functions
+    def translate(self, translation):
+        self.__translation *= translation
+
+    def setpos(self, position):
+        self.__translation = position
+
+    def getPos(self):
+        return self.__translation;
+
+    # Rotation functions
+    def rotate(self, angle):
+        self.__rotation *= angle
+
+    def setrot(self, rotation):
+        self.__rotation = rotation
+
+    def getRot(self):
+        return self.__rotation
+
+    # Scaling functions
+    def resize(self, resize):
+        self.__scale *= resize
+
+    def setScale(self, size):
+        self.__scale = size
+
+    def getScale(self):
+        return self.__scale
+
+    # Gets the value of the position, rotation, and scale rotation multiplied together.
+    def getMatrix(self):
+        return self.translation * self.rotation * self.scale

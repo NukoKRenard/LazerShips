@@ -53,11 +53,11 @@ class Program:
         #self.assets.append(progvar.SKYBOX)
 
         #Adds a number of ships for each team
-        for i in range(50):
+        for i in range(1):
             ship = actors.AIShip([copy.deepcopy(blueteam_ship)],str(i)+"avax",self.avaxTeam,self.ships)
             self.avaxTeam.addToTeam(ship)
             self.assets.append(ship)
-        for i in range(50):
+        for i in range(1):
             ship = actors.AIShip([copy.deepcopy(redteam_ship)],str(i)+"tx01",self.tx01Team,self.ships)
             self.tx01Team.addToTeam(ship)
             self.assets.append(ship)
@@ -72,9 +72,13 @@ class Program:
         self.maincam.attachToShip(self.player)
         self.player.disableAI()
 
-        #Adds the targeting recitle
-        self.crosshair = props.ScreenSpaceSprite("levelobjects/sprites/crosshairenabled.png")
+        #Adds the targeting recitle (and the two supporting images)
+        crosshairenabled = pygame.image.load("levelobjects/sprites/crosshairenabled.png")
+        crosshairdisabled = pygame.image.load("levelobjects/sprites/crosshairdisabled.png")
+        self.crosshair = props.ScreenSpaceSprite(crosshairenabled)
         self.assets.append(self.crosshair)
+
+        self.crosshair.setScale(glm.scale((.1,.1,.1)))
 
         #This checks all of the assets in the self.assets list, and if it is a ship type it adds them to the self.ships type
         #NOTE: This will be updated to include player controlled ships when those are implimented.
@@ -84,7 +88,11 @@ class Program:
 
         #Randomly sets the position of all of the ships.
         for ship in self.ships:
-            ship.setpos(glm.translate(glm.vec3(random.randint(-200,200),random.randint(-200,200),random.randint(-200,200))))
+            if self.player == ship:
+                ship.setpos(glm.translate((0,0,0)))
+            else:
+                ship.setpos(glm.translate((0,0,100)))
+            #ship.setpos(glm.translate(glm.vec3(random.randint(-200,200),random.randint(-200,200),random.randint(-200,200))))
 
         #Action
         #Assign key variables
@@ -121,15 +129,19 @@ class Program:
             if pygame.key.get_pressed()[pygame.K_SPACE]:
                 self.player.fire()
 
+            if self.player not in self.ships:
+                self.player = self.avaxTeam.getRandomMember()
+                self.maincam.attachToShip(self.player)
+                self.player.disableAI()
+
             #Refresh
             for asset in self.assets:
                 if asset.getIsActor():
                     asset.update()
 
-            if self.player not in self.ships:
-                self.player = self.avaxTeam.getRandomMember()
-                self.maincam.attachToShip(self.player)
-                self.player.disableAI()
+            targetloc = self.maincam.getWorldMatrix()*self.player.getTarget().getPos()*glm.vec4(0,0,0,1);
+            print(targetloc)
+            self.crosshair.setpos(glm.translate((targetloc.x,targetloc.y,targetloc.z)))
 
             #Clears the screen for drawing
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)

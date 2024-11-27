@@ -8,6 +8,6 @@ uniform mat4 perspectiveMatrix;
 out vec2 texPos;
 
 void main() {
-    gl_Position = objectMatrix*vec4(aPos.xy,0.0,1.0);
+    gl_Position = perspectiveMatrix*objectMatrix*vec4(aPos.xy,0.0,1.0);
     texPos = aTexPos;
 }

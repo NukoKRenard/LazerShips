@@ -50,6 +50,7 @@ class Camera:
     def __init__(self,fovy):
         self.screensize = (1920, 1080)
         self.perspectiveMatrix = glm.perspective(radians(fovy),self.screensize[0]/self.screensize[1],.001,1000)
+        self.worldMatrix = glm.mat4(1)
         self.position = glm.vec4(0,0,0,1)
         self.direction = glm.vec4(0,0,1,0)
         self.up = glm.vec4(0,1,0,0)
@@ -58,10 +59,9 @@ class Camera:
         self.screen = pygame.display.set_mode(self.screensize, pygame.OPENGL | pygame.DOUBLEBUF)
 
         # This is an error colour to show if something was not dran, this should ideally never be seen on the screen.
-
         glClearColor(1.0, 0.0, 1.0, 1)
 
-
+        #Loads all of the shaders using the helper function.
         self.starshipShader = loadShaderProgram("shaders/starshipVertex.glsl","shaders/starshipFragment.glsl")
         self.skyboxShader = loadShaderProgram("shaders/skyboxVertex.glsl", "shaders/skyboxFragment.glsl")
         self.lazerShader = loadShaderProgram("shaders/lazerVertex.glsl", "shaders/lazerFragment.glsl")
@@ -74,17 +74,18 @@ class Camera:
         self.indexBuffer = glGenBuffers(1)
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, self.indexBuffer)
 
+        #Enables some opengl functions (Blending (which allows semi transparent objects), and depth test (which tells opengl to draw closer objects over farther objects)
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
-        #glEnable(GL_BLEND)
+        glEnable(GL_BLEND)
         glEnable(GL_DEPTH_TEST)
         glDepthFunc(GL_LESS)
 
     def renderScene(self,scenemodeldata):
         glBindBuffer(GL_ARRAY_BUFFER,self.vertexBuffer)
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,self.indexBuffer)
-        worldMatrix = glm.lookAt(glm.vec3(self.position), glm.vec3(self.position + self.direction), glm.vec3(self.up))
+        self.worldMatrix = glm.lookAt(glm.vec3(self.position), glm.vec3(self.position + self.direction),glm.vec3(self.up))
         for object in scenemodeldata:
-            object.drawObj(worldMatrix,self.perspectiveMatrix,
+            object.drawObj(self.worldMatrix,self.perspectiveMatrix,
                            (self.starshipShader,self.skyboxShader,self.lazerShader,self.spriteShader),
                            self.vertexBuffer,
                            self.indexBuffer
@@ -112,6 +113,10 @@ class Camera:
             self.position.y += 1/30*deltaTime
         if pygame.key.get_pressed()[pygame.K_LCTRL]:
             self.position.y -= 1 / 30 * deltaTime
+    def getPerspectiveMatrix(self):
+        return self.perspectiveMatrix
+    def getWorldMatrix(self):
+        return self.worldMatrix
 
 class ShipCamera(Camera):
     def __init__(self,fovy,parentship=None):
