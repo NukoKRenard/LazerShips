@@ -45,6 +45,7 @@ def loadShaderProgram(vertexshader,fragmentshader):
 
     return shaderprogram
 
+#This is the basic camera class. It is used for debugging, and is a parent class for other camera types.
 class Camera:
     def __init__(self,fovy):
         self.screensize = (1920, 1080)
