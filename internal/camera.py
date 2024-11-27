@@ -9,6 +9,42 @@ import pygame
 import glm
 from math import *
 
+#A helper function used to load shaders (called by the camera)
+def loadShaderProgram(vertexshader,fragmentshader):
+    # Opens, reads, and stores the uncompiled vertex shader in a string.
+    vertexsrc = ""
+    with open(vertexshader, 'r') as vertexshaderfile:
+        vertexsrc = vertexshaderfile.read()
+    # Opens, reads, and stores the uncompiled fragment shader in a string.
+    fragmentsrc = ""
+    with open(fragmentshader, 'r') as fragmentshaderfile:
+        fragmentsrc = fragmentshaderfile.read()
+
+    shaderprogram = glCreateProgram()
+
+    shader_vert = glCreateShader(GL_VERTEX_SHADER)
+    glShaderSource(shader_vert, vertexsrc)
+    glCompileShader(shader_vert)
+    shaderiv = 0;
+    if (not glGetShaderiv(shader_vert, GL_COMPILE_STATUS)):
+        raise Exception(f"Shader \"{vertexshader}\" has error: {glGetShaderInfoLog(shader_frag)}")
+
+    shader_frag = glCreateShader(GL_FRAGMENT_SHADER)
+    glShaderSource(shader_frag, fragmentsrc)
+    glCompileShader(shader_frag)
+    shaderiv = 0;
+    if (not glGetShaderiv(shader_frag, GL_COMPILE_STATUS)):
+        raise Exception(f"Shader \"{vertexshader}\" has error: {glGetShaderInfoLog(shader_frag)}")
+
+
+    glAttachShader(shaderprogram, shader_vert)
+    glAttachShader(shaderprogram, shader_frag)
+    glLinkProgram(shaderprogram)
+    if (not glGetProgramiv(shaderprogram, GL_LINK_STATUS)):
+        raise Exception(f"Shaderprogram \"{vertexshader}\" and \"{fragmentshader}\" has error: {glGetProgramInfoLog(shaderprogram)}")
+
+    return shaderprogram
+
 class Camera:
     def __init__(self,fovy):
         self.screensize = (1920, 1080)
@@ -24,131 +60,33 @@ class Camera:
 
         glClearColor(1.0, 0.0, 1.0, 1)
 
-        # Opens, reads, and stores the uncompiled vertex shader in a string.
-        vertexsrc = ""
-        with open("shaders/starshipVertex.glsl", 'r') as vertexshaderfile:
-            vertexsrc = vertexshaderfile.read()
-        # Opens, reads, and stores the uncompiled fragment shader in a string.
-        fragmentsrc = ""
-        with open("shaders/starshipFragment.glsl", 'r') as fragmentshaderfile:
-            fragmentsrc = fragmentshaderfile.read()
 
-        self.starshipShader = glCreateProgram()
+        self.starshipShader = loadShaderProgram("shaders/starshipVertex.glsl","shaders/starshipFragment.glsl")
+        self.skyboxShader = loadShaderProgram("shaders/skyboxVertex.glsl", "shaders/skyboxFragment.glsl")
+        self.lazerShader = loadShaderProgram("shaders/lazerVertex.glsl", "shaders/lazerFragment.glsl")
+        self.spriteShader = loadShaderProgram("shaders/screenSpaceSpriteVertex.glsl", "shaders/screenSpaceSpriteFragment.glsl")
 
-        shader_vert = glCreateShader(GL_VERTEX_SHADER)
-        glShaderSource(shader_vert, vertexsrc)
-        glCompileShader(shader_vert)
 
-        shader_frag = glCreateShader(GL_FRAGMENT_SHADER)
-        glShaderSource(shader_frag, fragmentsrc)
-        glCompileShader(shader_frag)
+        self.vertexBuffer = glGenBuffers(1)
+        glBindBuffer(GL_ARRAY_BUFFER, self.vertexBuffer)
 
-        glAttachShader(self.starshipShader, shader_vert)
-        glAttachShader(self.starshipShader, shader_frag)
-        glLinkProgram(self.starshipShader)
+        self.indexBuffer = glGenBuffers(1)
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, self.indexBuffer)
 
-        self.starshipVertexBuffer = glGenBuffers(1)
-        glBindBuffer(GL_ARRAY_BUFFER, self.starshipVertexBuffer)
-
-        self.starshipIndexBuffer = glGenBuffers(1)
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, self.starshipIndexBuffer)
-
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
+        #glEnable(GL_BLEND)
         glEnable(GL_DEPTH_TEST)
-
-        # Opens, reads, and stores the uncompiled vertex shader in a string.
-        vertexsrc = ""
-        with open("shaders/skyboxVertex.glsl", 'r') as vertexshaderfile:
-            vertexsrc = vertexshaderfile.read()
-        # Opens, reads, and stores the uncompiled fragment shader in a string.
-        fragmentsrc = ""
-        with open("shaders/skyboxFragment.glsl", 'r') as fragmentshaderfile:
-            fragmentsrc = fragmentshaderfile.read()
-
-        self.skyboxShader = glCreateProgram()
-
-        shader_vert = glCreateShader(GL_VERTEX_SHADER)
-        glShaderSource(shader_vert, vertexsrc)
-        glCompileShader(shader_vert)
-
-        shader_frag = glCreateShader(GL_FRAGMENT_SHADER)
-        glShaderSource(shader_frag, fragmentsrc)
-        glCompileShader(shader_frag)
-
-        glAttachShader(self.skyboxShader, shader_vert)
-        glAttachShader(self.skyboxShader, shader_frag)
-        glLinkProgram(self.skyboxShader)
-
-        self.skyboxVertexBuffer = glGenBuffers(1)
-        glBindBuffer(GL_ARRAY_BUFFER, self.skyboxVertexBuffer)
-
-        self.skyboxIndexBuffer = glGenBuffers(1)
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, self.skyboxIndexBuffer)
-
-        vertexsrc = ""
-        with open("shaders/lazerVertex.glsl", 'r') as vertexshaderfile:
-            vertexsrc = vertexshaderfile.read()
-        # Opens, reads, and stores the uncompiled fragment shader in a string.
-        fragmentsrc = ""
-        with open("shaders/lazerFragment.glsl", 'r') as fragmentshaderfile:
-            fragmentsrc = fragmentshaderfile.read()
-
-        self.lazerShader = glCreateProgram()
-
-        shader_vert = glCreateShader(GL_VERTEX_SHADER)
-        glShaderSource(shader_vert, vertexsrc)
-        glCompileShader(shader_vert)
-
-        shader_frag = glCreateShader(GL_FRAGMENT_SHADER)
-        glShaderSource(shader_frag, fragmentsrc)
-        glCompileShader(shader_frag)
-
-        glAttachShader(self.lazerShader, shader_vert)
-        glAttachShader(self.lazerShader, shader_frag)
-        glLinkProgram(self.lazerShader)
-
-        self.lazerVertexBuffer = glGenBuffers(1)
-        glBindBuffer(GL_ARRAY_BUFFER, self.lazerVertexBuffer)
-
-        self.lazerIndexBuffer = glGenBuffers(1)
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, self.lazerIndexBuffer)
-
-        vertexsrc = ""
-        with open("shaders/spriteVertex.glsl", 'r') as vertexshaderfile:
-            vertexsrc = vertexshaderfile.read()
-        # Opens, reads, and stores the uncompiled fragment shader in a string.
-        fragmentsrc = ""
-        with open("shaders/spriteFragment.glsl", 'r') as fragmentshaderfile:
-            fragmentsrc = fragmentshaderfile.read()
-
-        self.spriteShader = glCreateProgram()
-
-        shader_vert = glCreateShader(GL_VERTEX_SHADER)
-        glShaderSource(shader_vert, vertexsrc)
-        glCompileShader(shader_vert)
-
-        shader_frag = glCreateShader(GL_FRAGMENT_SHADER)
-        glShaderSource(shader_frag, fragmentsrc)
-        glCompileShader(shader_frag)
-
-        glAttachShader(self.spriteShader, shader_vert)
-        glAttachShader(self.spriteShader, shader_frag)
-        glLinkProgram(self.spriteShader)
-
-        self.spriteVertexBuffer = glGenBuffers(1)
-        glBindBuffer(GL_ARRAY_BUFFER, self.spriteVertexBuffer)
-
-        self.spriteIndexBuffer = glGenBuffers(1)
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, self.spriteIndexBuffer)
+        glDepthFunc(GL_LESS)
 
     def renderScene(self,scenemodeldata):
-        glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA)
-        glEnable(GL_BLEND)
+        glBindBuffer(GL_ARRAY_BUFFER,self.vertexBuffer)
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,self.indexBuffer)
         worldMatrix = glm.lookAt(glm.vec3(self.position), glm.vec3(self.position + self.direction), glm.vec3(self.up))
         for object in scenemodeldata:
             object.drawObj(worldMatrix,self.perspectiveMatrix,
                            (self.starshipShader,self.skyboxShader,self.lazerShader,self.spriteShader),
-                           (self.starshipVertexBuffer,self.skyboxVertexBuffer,self.lazerVertexBuffer,self.spriteVertexBuffer),
-                           (self.starshipIndexBuffer,self.skyboxIndexBuffer,self.lazerIndexBuffer,self.spriteIndexBuffer)
+                           self.vertexBuffer,
+                           self.indexBuffer
                            )
 
     #Calculates camera movement, Very crude as of right now

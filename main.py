@@ -50,7 +50,7 @@ class Program:
                                     "levelobjects/texturedata/StarshipRoughnessGlowmap.png", "redteam-costume")
         #Creates a skybox
         progvar.SKYBOX = props.Skybox("skyboxes/spaceSkybox0", "level-skybox")
-        self.assets.append(progvar.SKYBOX)
+        #self.assets.append(progvar.SKYBOX)
 
         #Adds a number of ships for each team
         for i in range(50):
@@ -68,7 +68,7 @@ class Program:
         self.tx01Team.declareWar(self.avaxTeam)
 
         #Adds the player:
-        self.player = self.avaxTeam.getRandomShip()
+        self.player = self.avaxTeam.getRandomMember()
         self.maincam.attachToShip(self.player)
         self.player.disableAI()
 
@@ -127,7 +127,7 @@ class Program:
                     asset.update()
 
             if self.player not in self.ships:
-                self.player = self.avaxTeam.getRandomShip()
+                self.player = self.avaxTeam.getRandomMember()
                 self.maincam.attachToShip(self.player)
                 self.player.disableAI()
 
