@@ -29,6 +29,7 @@ class Program:
         #Display
         #The camera handles the screen and drawing functions.
         self.maincam = camera.ShipCamera(90)
+        progvar.CAMERA = self.maincam
 
         # Entities
         #The self.assets list is used for drawing to the screen. If something needs to be shown on screen it needs to be here.
@@ -139,9 +140,9 @@ class Program:
                 if asset.getIsActor():
                     asset.update()
 
-            targetloc = self.maincam.getWorldMatrix()*self.player.getTarget().getPos()*glm.vec4(0,0,0,1);
-            print(targetloc)
-            self.crosshair.setpos(glm.translate((targetloc.x,targetloc.y,targetloc.z)))
+            targetloc = self.maincam.getPerspectiveMatrix()*self.maincam.getWorldMatrix()*self.player.getTarget().getPos()*glm.vec4(0,0,0,1)
+            print(targetloc.xyz/targetloc.z)
+            self.crosshair.setpos(glm.translate())
 
             #Clears the screen for drawing
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)

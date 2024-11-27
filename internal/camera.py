@@ -134,3 +134,5 @@ class ShipCamera(Camera):
 
     def getShip(self):
         return self.__parentship
+    def getAspectRatio(self):
+        return self.screensize[0]/self.screensize[1]

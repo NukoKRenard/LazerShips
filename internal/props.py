@@ -430,7 +430,7 @@ class Lazer(Object):
 
 class ScreenSpaceSprite:
     def __init__(self,image):
-        self.__translation = glm.translate((0,0,-1))
+        self.__translation = glm.mat4(1)
         self.__rotation = glm.mat4(1)
         self.__scale = glm.mat4(1)
 
@@ -472,7 +472,7 @@ class ScreenSpaceSprite:
         glEnableVertexAttribArray(0)
         glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), c_void_p(12))
         glEnableVertexAttribArray(1)
-
+        nm = glm.mat4(1)
         glUniformMatrix4fv(glGetUniformLocation(shaderlist[3], "perspectiveMatrix"), 1, GL_FALSE,
                            glm.value_ptr(perspectiveMatrix))
         glUniformMatrix4fv(glGetUniformLocation(shaderlist[3], "objectMatrix"), 1, GL_FALSE,

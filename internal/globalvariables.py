@@ -12,5 +12,7 @@ SHIPS = []
 global SKYBOX
 SKYBOX = None
 #The DELTATIME variable is used to change speeds on framerate. It allows for continuity in the case of lag.
+global CAMERA
+CAMERA = None
 global DELTATIME
 DELTATIME = 1
