@@ -141,9 +141,9 @@ class Program:
                     asset.update()
 
             targetloc = self.maincam.getPerspectiveMatrix()*self.maincam.getWorldMatrix()*self.player.getTarget().getPos()*glm.vec4(0,0,0,1)
-            targetloc = glm.vec3(targetloc)
-            print(targetloc.xyz/targetloc.z)
-            self.crosshair.setpos(glm.translate(targetloc.x,targetloc.y,-1.0))
+            targetloc = glm.vec3(targetloc)/targetloc.z
+            print(targetloc.xyz)
+            self.crosshair.setpos(glm.translate((targetloc.x,targetloc.z,-1.0)))
 
             #Clears the screen for drawing
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
