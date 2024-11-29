@@ -15,6 +15,8 @@ import copy
 import random
 import internal.props as props
 
+global SHIPLOCRAD
+SHIPLOCRAD = .95
 
 #This is a template for an actor type. Sets some default values.
 class ActorTemplate:
@@ -122,9 +124,6 @@ class StarShipTemplate(ActorTemplate):
             rm += self.__ry if self.__ry > 0 else -self.__ry
             rm += self.__rr if self.__rr > 0 else -self.__rr
 
-            if progvar.DELTATIME == 0:
-                raise Exception("DELTA TIME EQUALS ZERO")
-
             rotation *= glm.rotate(self.__maxrotatespeedc * rm, (self.__rp, self.__ry, self.__rr))
         self.rotate(rotation)
         self.translate(glm.translate((self.getRot() * glm.vec4(self.__dx, self.__dy, self.__dz, 0)).xyz))
@@ -177,11 +176,8 @@ class StarShipTemplate(ActorTemplate):
         if points < 0:
             raise Exception(f"Starship recieved {points} damage, damage points can not be negative.")
         self.__health -= points
-        if attacker != None:
-            self.__target = attacker
         if self.__health <= 0:
             self.removefromgame()
-            print(f"{self.getID()} is dead.")
             return True
         return False
 
@@ -219,6 +215,8 @@ class AIShip(StarShipTemplate):
         self.__timesincelastfire = 0
         self.__AI = True
         self.__firing = False
+        self.__enemyDot = 1;
+        self.__hasLock = False;
 
         self.__lazer = props.Lazer((self.getPos()*glm.vec4(0,0,0,1)).xyz,(self.getPos()*glm.vec4(0,0,0,1)).xyz,self.__team.getTeamColor())
         progvar.ASSETS.append(self.__lazer)
@@ -239,10 +237,14 @@ class AIShip(StarShipTemplate):
         if (not self.__target) or (not targetexists):
             self.__target = self.__team.getRandomEnemy()
 
-        if self.__AI:
-            if self.__target:
+        if self.__target:
+            targetdir = glm.normalize((self.__target.getPos() * glm.vec4(0, 0, 0, 1)) - (self.getPos() * glm.vec4(0, 0, 0, 1)))
+            selfdir = self.getRot() * glm.vec4(0, 0, 1, 1)
+            self.__enemyDot = glm.dot(targetdir.xyz, selfdir.xyz)
 
-                targetdir = glm.normalize((self.__target.getPos()*glm.vec4(0,0,0,1))-(self.getPos()*glm.vec4(0,0,0,1)))
+            self.__hasLock = self.__enemyDot > SHIPLOCRAD
+
+            if self.__AI:
                 localtargetdir = glm.inverse(self.getRot())*targetdir
 
                 targetup = self.__target.getRot()*glm.vec4(0,1,0,0)
@@ -257,7 +259,7 @@ class AIShip(StarShipTemplate):
                 # stops chasing its target and instead tries to avoid a colission
                 closestshipdistance = -1
                 for ship in self.__allships:
-                    speeddif = glm.dot(self.getVelocity(),ship.getVelocity())
+                    speeddif = glm.dot(self.getVelocity(),ship.getVelocity())*2
                     speeddif = speeddif if speeddif > 1 else 1
                     if ship.getPos() != self.getPos():
                         shippos = ship.getPos() * glm.vec4(0, 0, 0, 1)
@@ -294,8 +296,7 @@ class AIShip(StarShipTemplate):
                 if self.getPos()*self.getRot()*self.getScale()*glm.scale((2,2,2)) == self.getPos()*self.getRot()*self.getScale():
                     raise Exception(f"Error ship {self.getID()} matrix is {self.getPos()*self.getRot()*self.getScale()}")
 
-                selfdir = self.getRot() * glm.vec4(0, 0, 1, 1)
-                if glm.dot(targetdir.xyz, selfdir.xyz) > .95:
+                if self.__hasLock:
                     self.fire()
                     self.__timesincelastfire = 0
                 else:
@@ -315,7 +316,6 @@ class AIShip(StarShipTemplate):
                 self.__target = self.__team.getRandomEnemy()
             enemyindex += number
             enemyindex %= len(enemyShips)-1
-            print(enemyindex)
             self.__target = enemyShips[enemyindex]
 
         else:
@@ -329,10 +329,10 @@ class AIShip(StarShipTemplate):
         selfdir = self.getRot()*glm.vec4(0,0,1,1)
         self.__lazer.setpos(start=(self.getPos() * glm.vec4(0, 0, 0, 1)).xyz)
 
-        if glm.dot(targetdir.xyz,selfdir.xyz) > .95:
+        if glm.dot(targetdir.xyz,selfdir.xyz) > SHIPLOCRAD:
             self.__lazer.setpos(end=(self.__target.getPos() * glm.vec4(0, 0, 0, 1)).xyz)
             if self.__target.damage(.001*progvar.DELTATIME,self):
-                self.__target = self.__team.getRandomEnemy()
+                self.__target = None
         else:
             self.__lazer.setpos(end=((self.getPos()*glm.vec4(0,0,0,1))+(self.getRot()*glm.vec4(0,0,100,0))).xyz)
 
@@ -350,3 +350,7 @@ class AIShip(StarShipTemplate):
         self.__AI = False
     def enableAI(self):
         self.__AI = True
+    def isLocked(self):
+        return self.__hasLock
+    def getTargetDot(self):
+        return self.__enemyDot

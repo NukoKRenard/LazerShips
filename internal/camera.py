@@ -90,6 +90,8 @@ class Camera:
                            self.vertexBuffer,
                            self.indexBuffer
                            )
+    def getScreenDimensions(self):
+        return self.screensize
 
     #Calculates camera movement, Very crude as of right now
     def updateCamera(self,deltaTime):

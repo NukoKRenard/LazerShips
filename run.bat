@@ -2,7 +2,7 @@
 :begin
 cd "%~dp0"
 
-"venv/Scripts/python.exe" "main.py"
+python "main.py"
 echo %ERRORLEVEL%
 if %ERRORLEVEL% NEQ 0 (
     echo "Program error"

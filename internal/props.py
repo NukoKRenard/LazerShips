@@ -4,6 +4,8 @@ This file holds code for props that can be drawn to a scene. Props are static ob
 They can move and rotate, but have no way of doing this on their own and it can only be done through a external function.
 Props would make up static parts of the game, like the level geomery, or a tree, something to show, but with no behavior.
 """
+from pygame.examples.cursors import image
+
 import internal.globalvariables as progvar
 from OpenGL.GL import *
 from ctypes import c_void_p
@@ -433,6 +435,7 @@ class ScreenSpaceSprite:
         self.__translation = glm.mat4(1)
         self.__rotation = glm.mat4(1)
         self.__scale = glm.mat4(1)
+        self.__rect = image.get_rect()
 
         self.changeImage(image)
     def drawObj(self, worldMatrix, perspectiveMatrix,
@@ -444,11 +447,13 @@ class ScreenSpaceSprite:
 
         objMatrix = (self.__translation * self.__rotation * self.__scale)
 
+        imgvertsize = glm.vec2(self.__rect.size)/glm.vec2(progvar.CAMERA.getScreenDimensions())/2
+
         vertexdata = (
-            -1.0,-1.0,0.0,0.0,0.0,
-            -1.0,1.0,0.0,0.0,1.0,
-            1.0, 1.0,0.0,1.0,1.0,
-            1.0,-1.0,0.0,1.0,0.0
+            -imgvertsize.x,-imgvertsize.y,0.0,0.0,0.0,
+            -imgvertsize.x, imgvertsize.y,0.0,0.0,1.0,
+             imgvertsize.x, imgvertsize.y,0.0,1.0,1.0,
+             imgvertsize.x,-imgvertsize.y,0.0,1.0,0.0
         )
 
         indexdata = (
@@ -472,9 +477,6 @@ class ScreenSpaceSprite:
         glEnableVertexAttribArray(0)
         glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), c_void_p(12))
         glEnableVertexAttribArray(1)
-        nm = glm.mat4(1)
-        glUniformMatrix4fv(glGetUniformLocation(shaderlist[3], "perspectiveMatrix"), 1, GL_FALSE,
-                           glm.value_ptr(perspectiveMatrix))
         glUniformMatrix4fv(glGetUniformLocation(shaderlist[3], "objectMatrix"), 1, GL_FALSE,
                            glm.value_ptr(objMatrix))
         glUniform1i(glGetUniformLocation(shaderlist[3],"image"),0)
@@ -484,12 +486,14 @@ class ScreenSpaceSprite:
     def getIsActor(self):
         return False
     def changeImage(self, imagedata):
+        self.__rect = imagedata.get_rect()
         self.texture = glGenTextures(1)
         glBindTexture(GL_TEXTURE_2D, self.texture)
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT)
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT)
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
+        imagedata = pygame.transform.flip(imagedata,False,True)
         image_width, image_height = imagedata.get_rect().size
         image = pygame.image.tobytes(imagedata, "RGBA")
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, image_width, image_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, image)
@@ -531,3 +535,15 @@ class ScreenSpaceSprite:
     # Gets the value of the position, rotation, and scale rotation multiplied together.
     def getMatrix(self):
         return self.translation * self.rotation * self.scale
+
+class ScreenSpaceLabel(ScreenSpaceSprite):
+    def __init__(self,text,color=(255,255,255),size=30,font="Arial"):
+        self.__font = pygame.font.SysFont(font,size)
+        self.__color = color
+        self.__image = self.__font.render(text,1,self.__color)
+
+        ScreenSpaceSprite.__init__(self,self.__image)
+
+    def changeText(self,text):
+        self.__image = self.__font.render(text,1,self.__color)
+        ScreenSpaceSprite.changeImage(self,self.__image)
