@@ -6,12 +6,13 @@ actors effect the flow of the game.
 """
 import time
 
-import internal.globalvariables as progvar
+from OpenGL.wrapper import none_or_pass
 
+import internal.globalvariables as progvar
+from memory_profiler import profile
 import glm
 import pygame
 from math import *
-import copy
 import random
 import internal.props as props
 
@@ -57,7 +58,7 @@ class ActorTemplate:
     def setpos(self, position):
         self.__translation = position
     def getPos(self):
-        return self.__translation;
+        return self.__translation
 
     def rotate(self, angle):
         self.__rotation *= angle
@@ -77,7 +78,6 @@ class ActorTemplate:
         for costume in self.costumes:
             if costume.getIsActor():
                 costume.update()
-
     def removefromgame(self):
         try:
             progvar.ASSETS.remove(self)
@@ -88,7 +88,7 @@ class ActorTemplate:
 class StarShipTemplate(ActorTemplate):
     def __init__(self,
                  starshipCostumes,ID,
-                 minSpeed=0,maxSpeed=1,maxrotatespeed = 1/10,
+                 minSpeed=0,maxSpeed=5,maxrotatespeed = 1/10,
                  maxhealth = 1):
         ActorTemplate.__init__(self,starshipCostumes,ID)
         self.__health = maxhealth
@@ -115,7 +115,7 @@ class StarShipTemplate(ActorTemplate):
 
         self.__rp -= self.__rp / 100
         self.__ry -= self.__ry / 100
-        self.__rr -= self.__rr / 100
+        self.__rr -= self.__rr / 10
 
         rotation = glm.mat4(1)
         if self.__rp or self.__ry or self.__rr:
@@ -204,6 +204,9 @@ class StarShipTemplate(ActorTemplate):
             progvar.SHIPS.remove(self)
         except:
             print(f"{self} not in ships list...")
+        for ship in progvar.SHIPS:
+            if ship.getTarget() == self:
+                ship.switchtarget(1)
 
 class AIShip(StarShipTemplate):
     def __init__(self,shipmodel,ID,team,shipsinplay):
@@ -215,8 +218,8 @@ class AIShip(StarShipTemplate):
         self.__timesincelastfire = 0
         self.__AI = True
         self.__firing = False
-        self.__enemyDot = 1;
-        self.__hasLock = False;
+        self.__enemyDot = 1
+        self.__hasLock = False
 
         self.__lazer = props.Lazer((self.getPos()*glm.vec4(0,0,0,1)).xyz,(self.getPos()*glm.vec4(0,0,0,1)).xyz,self.__team.getTeamColor())
         progvar.ASSETS.append(self.__lazer)
@@ -237,12 +240,16 @@ class AIShip(StarShipTemplate):
         if (not self.__target) or (not targetexists):
             self.__target = self.__team.getRandomEnemy()
 
+        if self.__target not in progvar.ASSETS or self.__target not in progvar.SHIPS:
+            self.__target = self.__team.getRandomEnemy()
+
         if self.__target:
-            targetdir = glm.normalize((self.__target.getPos() * glm.vec4(0, 0, 0, 1)) - (self.getPos() * glm.vec4(0, 0, 0, 1)))
+            targetpos = (self.__target.getPos() * glm.vec4(0, 0, 0, 1))
+            targetdir = glm.normalize((targetpos - (self.getPos() * glm.vec4(0, 0, 0, 1))).xyz)
             selfdir = self.getRot() * glm.vec4(0, 0, 1, 1)
             self.__enemyDot = glm.dot(targetdir.xyz, selfdir.xyz)
 
-            self.__hasLock = self.__enemyDot > SHIPLOCRAD
+            self.__hasLock = self.__enemyDot > SHIPLOCRAD and glm.length(targetpos-(self.getPos()*glm.vec4(0,0,0,1))) < 300
 
             if self.__AI:
                 localtargetdir = glm.inverse(self.getRot())*targetdir
@@ -251,7 +258,7 @@ class AIShip(StarShipTemplate):
                 localtargetup = glm.inverse(self.getRot())*targetup
 
                 selfpos = self.getPos() * glm.vec4(0, 0, 0, 1)
-                if glm.length(selfpos) > 1000:
+                if glm.length(selfpos) > progvar.MAPSIZE:
                     targetdir = glm.normalize(-selfpos)
                     localtargetdir = glm.inverse(self.getRot())*targetdir
 
@@ -259,19 +266,18 @@ class AIShip(StarShipTemplate):
                 # stops chasing its target and instead tries to avoid a colission
                 closestshipdistance = -1
                 for ship in self.__allships:
-                    speeddif = glm.dot(self.getVelocity(),ship.getVelocity())*2
+                    speeddif = (glm.dot(self.getVelocity(),ship.getVelocity())/self.getMaxSpeed())*2
                     speeddif = speeddif if speeddif > 1 else 1
                     if ship.getPos() != self.getPos():
                         shippos = ship.getPos() * glm.vec4(0, 0, 0, 1)
                         shipvec = shippos-selfpos
                         if glm.length(shipvec) < 10:
                             self.damage(1)
-                            self.__target.damage(1)
+                            ship.damage(1)
                         colissiondetected = glm.length(shipvec) < (50*speeddif)-(10*self.__recklessness)
                         if colissiondetected and closestshipdistance == -1:
                             closestshipdistance = glm.length(shipvec)
                             targetdir = shipvec/(glm.length(shipvec))
-                            prevcolissiondetected = True
                         elif colissiondetected and closestshipdistance != -1:
                             targetdir += shipvec/(glm.length(shipvec))
                             if glm.length(shipvec) > closestshipdistance:
@@ -325,25 +331,31 @@ class AIShip(StarShipTemplate):
 
     def fire(self):
         self.__firing = True
-        targetdir = glm.normalize((self.__target.getPos()*glm.vec4(0,0,0,1))-(self.getPos()*glm.vec4(0,0,0,1)))
-        selfdir = self.getRot()*glm.vec4(0,0,1,1)
-        self.__lazer.setpos(start=(self.getPos() * glm.vec4(0, 0, 0, 1)).xyz)
+        if self.__target:
 
-        if glm.dot(targetdir.xyz,selfdir.xyz) > SHIPLOCRAD:
-            self.__lazer.setpos(end=(self.__target.getPos() * glm.vec4(0, 0, 0, 1)).xyz)
-            if self.__target.damage(.001*progvar.DELTATIME,self):
-                self.__target = None
+            targetpos = (self.__target.getPos()*glm.vec4(0,0,0,1))
+            targetdir = glm.normalize(targetpos-(self.getPos()*glm.vec4(0,0,0,1)))
+            selfdir = self.getRot()*glm.vec4(0,0,1,1)
+            self.__lazer.setpos(start=(self.getPos() * glm.vec4(0, 0, 0, 1)).xyz)
+
+            if glm.dot(targetdir.xyz,selfdir.xyz) > SHIPLOCRAD and glm.length(targetpos-(self.getPos()*glm.vec4(0,0,0,1))) < 300:
+                self.__lazer.setpos(end=(self.__target.getPos() * glm.vec4(0, 0, 0, 1)).xyz)
+                if self.__target.damage(.001*progvar.DELTATIME,self):
+                        self.__target = None
+            else:
+                self.__lazer.setpos(end=((self.getPos()*glm.vec4(0,0,0,1))+(self.getRot()*glm.vec4(0,0,100,0))).xyz)
         else:
-            self.__lazer.setpos(end=((self.getPos()*glm.vec4(0,0,0,1))+(self.getRot()*glm.vec4(0,0,100,0))).xyz)
+            self.__lazer.setpos(end=((self.getPos() * glm.vec4(0, 0, 0, 1)) + (self.getRot() * glm.vec4(0, 0, 100, 0))).xyz)
 
 
     def damage(self,points,attacker=None):
-        if attacker != None:
+        if attacker:
             self.__target = attacker
         if StarShipTemplate.damage(self,points,attacker):
             self.__team.removeFromTeam(self)
             self.__lazer.removefromgame()
-            del self
+            self.__target = None
+            self.__team = None
             return True
         return False
     def disableAI(self):

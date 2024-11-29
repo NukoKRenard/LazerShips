@@ -2,11 +2,11 @@
 10/19/2024
 This file is the entry point of the program. It holds the Program() class which is how the game is run.
 """
-import time
-
 #Import and Initialize
 
+
 import internal.globalvariables as progvar
+import time
 
 import pygame
 import math
@@ -54,14 +54,24 @@ class Program:
         self.assets.append(progvar.SKYBOX)
 
         #Adds a number of ships for each team
-        for i in range(20):
+        for i in range(1):
             ship = actors.AIShip([copy.deepcopy(blueteam_ship)],str(i)+"avax",self.avaxTeam,self.ships)
             self.avaxTeam.addToTeam(ship)
             self.assets.append(ship)
-        for i in range(20):
+        for i in range(1):
             ship = actors.AIShip([copy.deepcopy(redteam_ship)],str(i)+"tx01",self.tx01Team,self.ships)
             self.tx01Team.addToTeam(ship)
             self.assets.append(ship)
+
+        # This checks all of the assets in the self.assets list, and if it is a ship type it adds them to the self.ships type
+        for asset in self.assets:
+            if isinstance(asset, actors.AIShip):
+                self.ships.append(asset)
+
+        # Randomly sets the position of all of the ships.
+        for ship in self.ships:
+            ship.setpos(glm.translate(
+                glm.vec3(random.randint(-500, 500), random.randint(-500, 500), random.randint(-500, 500))))
 
 
         #These two functions cause the teams to add the other to their enemy list. This allows all of the ships in the team to start fighting.
@@ -71,7 +81,8 @@ class Program:
         #Adds the player:
         self.player = self.avaxTeam.getRandomMember()
         self.maincam.attachToShip(self.player)
-        self.player.disableAI()
+        if self.player:
+            self.player.disableAI()
 
         #Adds the targeting recitle (and the two supporting images)
         crosshairenabled = pygame.image.load("levelobjects/sprites/crosshairenabled.png")
@@ -91,19 +102,14 @@ class Program:
         tx01count.setpos(glm.translate((-.5, .5, -1.0)))
         self.assets.append(tx01count)
 
-        #This checks all of the assets in the self.assets list, and if it is a ship type it adds them to the self.ships type
-        #NOTE: This will be updated to include player controlled ships when those are implimented.
-        for asset in self.assets:
-            if isinstance(asset,actors.AIShip):
-                self.ships.append(asset)
-
-        #Randomly sets the position of all of the ships.
-        for ship in self.ships:
-            ship.setpos(glm.translate(glm.vec3(random.randint(-200,200),random.randint(-200,200),random.randint(-200,200))))
+        #Adds text telling the player to return if they try to leave the map
+        leavemaptimetext = props.ScreenSpaceLabel("Placeholdertext", size=100)
 
         #Action
         #Assign key variables
         playerthrottle = .5
+        playerleftmaptime = 0
+        playerenteredmaptime = 0
         self.__clock = pygame.time.Clock()
         self.userhasquit = False
         #This variable is only for debugging. It will be removed before release.
@@ -132,29 +138,27 @@ class Program:
                         self.player.switchtarget(1)
                     elif event.key == pygame.K_MINUS:
                         self.player.switchtarget(-1)
-                        self.player.damage(1)
-                    print(f"Target switched to: {self.player.getTarget().getID()}")
+                if event.type == pygame.MOUSEWHEEL:
+                    playerthrottle += event.y*(1/60)
+
             if self.player:
                 if pygame.key.get_pressed()[pygame.K_SPACE]:
                     self.player.fire()
 
-                if pygame.key.get_pressed()[pygame.K_w]:
-                    playerthrottle+=.1
-                elif pygame.key.get_pressed()[pygame.K_s]:
-                    playerthrottle-=.1
                 if pygame.mouse.get_pressed()[0]:
                     self.player.roll(-1)
+                    print("Rollr")
                 elif pygame.mouse.get_pressed()[2]:
                     self.player.roll(1)
+                    print("Rolll")
                 if playerthrottle > 1:
                     playerthrottle = 1
                 elif playerthrottle < -1:
                     playerthrottle = -1
                 self.player.throttleSpeed(playerthrottle*self.player.getMaxSpeed()-self.player.getVelocity().z)
-
+                border = 100
                 mousepos = ((glm.vec2(pygame.mouse.get_pos()) / glm.vec2(self.maincam.getScreenDimensions()))-.5)*2
                 mousepospx = [pygame.mouse.get_pos()[0],pygame.mouse.get_pos()[1]]
-                border = 300
                 if mousepospx[0] <= border*self.maincam.getAspectRatio():
                     mousepospx[0] = border*self.maincam.getAspectRatio()
                 elif mousepospx[0] >= self.maincam.getScreenDimensions()[0]-(border*self.maincam.getAspectRatio()):
@@ -172,8 +176,6 @@ class Program:
                 if self.player != None:
                     self.maincam.attachToShip(self.player)
                     self.player.disableAI()
-                else:
-                    print("Game over, you loose.")
             #Refresh
             for asset in self.assets:
                 if asset.getIsActor():
@@ -183,6 +185,8 @@ class Program:
                 targetloc = self.maincam.getPerspectiveMatrix() * self.maincam.getWorldMatrix() * self.player.getTarget().getPos() * glm.vec4(0, 0, 0, 1)
                 targetloc = targetloc/targetloc.w
 
+                targetloc.x = targetloc.x if abs(targetloc.x) <=1 else targetloc.x/abs(targetloc.x)
+                targetloc.y = targetloc.y if abs(targetloc.y) <= 1 else targetloc.y/abs(targetloc.y)
                 self.crosshair.setpos(glm.translate((targetloc.x,targetloc.y,-1)))
 
                 if self.player.isLocked():
@@ -193,14 +197,47 @@ class Program:
                     self.crosshair.changeImage(crosshairreversed)
 
             for ship in self.ships:
-                if ship.getVelocity().z > 3:
+                if ship.getVelocity().z > 5:
                     raise Exception(f"Error: {ship.getID()} is above the max speed.")
 
             avaxcount.changeText(str(len(self.avaxTeam.getAllMembers())))
             tx01count.changeText(str(len(self.tx01Team.getAllMembers())))
 
-            #Clears the screen for drawing
-            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
+            #Changes the image to greyscale if the player is out of bounds.
+            if self.player and glm.length((self.player.getPos() * glm.vec4(0, 0, 0, 1))) > progvar.MAPSIZE:
+                playerenteredmaptime = 0
+                if not playerleftmaptime:
+                    playerleftmaptime = time.time()
+                    if leavemaptimetext not in self.assets:
+                        self.assets.append(leavemaptimetext)
+
+                #Displays a message warning them to return.
+                playertime = int(time.time() - playerleftmaptime)
+                countdown = 10 - playertime
+                countdown = countdown if countdown > 0 else 0
+                leavemaptimetext.changeText(f"Return to the fight. You have {countdown} seconds!")
+
+                #Kills the player if they are out of bounds for too long.
+                if 10 - playertime < 0:
+                    self.player.damage(1)
+
+                self.maincam.setPostProssGreyscale((time.time()-playerleftmaptime)/3)
+            else:
+                playerleftmaptime = 0
+                if not playerenteredmaptime:
+                    if leavemaptimetext in self.assets:
+                        self.assets.remove(leavemaptimetext)
+                    playerenteredmaptime = time.time()
+
+                self.maincam.setPostProssGreyscale(1 - (time.time() - playerenteredmaptime) / 3)
+
+                print(playerleftmaptime)
+                print(playerenteredmaptime)
+
+            for ship in self.ships:
+                if ship.getTarget() not in self.assets and ship.getTarget():
+                    raise Exception("Error, ship's target was not removed.")
+
             #Updates the cameras position based on userinput
             #NOTE as of this stage userinput is crude. Movement directions to not account for the look direction.
             self.maincam.updateCamera()

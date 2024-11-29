@@ -16,3 +16,6 @@ global CAMERA
 CAMERA = None
 global DELTATIME
 DELTATIME = 1
+
+global MAPSIZE
+MAPSIZE = 1000
