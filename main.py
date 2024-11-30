@@ -12,7 +12,7 @@ import pygame
 import math
 from OpenGL.GL import *
 import numpy
-import glm
+from pyglm import glm
 from math import *
 import copy
 import random
@@ -54,11 +54,11 @@ class Program:
         self.assets.append(progvar.SKYBOX)
 
         #Adds a number of ships for each team
-        for i in range(1):
+        for i in range(20):
             ship = actors.AIShip([copy.deepcopy(blueteam_ship)],str(i)+"avax",self.avaxTeam,self.ships)
             self.avaxTeam.addToTeam(ship)
             self.assets.append(ship)
-        for i in range(1):
+        for i in range(20):
             ship = actors.AIShip([copy.deepcopy(redteam_ship)],str(i)+"tx01",self.tx01Team,self.ships)
             self.tx01Team.addToTeam(ship)
             self.assets.append(ship)
@@ -147,10 +147,8 @@ class Program:
 
                 if pygame.mouse.get_pressed()[0]:
                     self.player.roll(-1)
-                    print("Rollr")
                 elif pygame.mouse.get_pressed()[2]:
                     self.player.roll(1)
-                    print("Rolll")
                 if playerthrottle > 1:
                     playerthrottle = 1
                 elif playerthrottle < -1:
@@ -181,8 +179,9 @@ class Program:
                 if asset.getIsActor():
                     asset.update()
 
-            if self.player and self.player.getTarget():
-                targetloc = self.maincam.getPerspectiveMatrix() * self.maincam.getWorldMatrix() * self.player.getTarget().getPos() * glm.vec4(0, 0, 0, 1)
+            playertarget = self.player.getTarget()
+            if self.player and playertarget:
+                targetloc = self.maincam.getPerspectiveMatrix() * self.maincam.getWorldMatrix() * playertarget.getPos() * glm.vec4(0, 0, 0, 1)
                 targetloc = targetloc/targetloc.w
 
                 targetloc.x = targetloc.x if abs(targetloc.x) <=1 else targetloc.x/abs(targetloc.x)
@@ -190,10 +189,14 @@ class Program:
                 self.crosshair.setpos(glm.translate((targetloc.x,targetloc.y,-1)))
 
                 if self.player.isLocked():
-                    self.crosshair.changeImage(crosshairenabled)
+                    if self.crosshair.getImage() != crosshairenabled:
+                        self.crosshair.changeImage(crosshairenabled)
+
                 elif self.player.getTargetDot() >= 0:
-                    self.crosshair.changeImage(crosshairdisabled)
-                else:
+                    if self.crosshair.getImage() != crosshairdisabled:
+                        self.crosshair.changeImage(crosshairdisabled)
+
+                elif self.crosshair.getImage() != crosshairreversed:
                     self.crosshair.changeImage(crosshairreversed)
 
             for ship in self.ships:
@@ -230,13 +233,6 @@ class Program:
                     playerenteredmaptime = time.time()
 
                 self.maincam.setPostProssGreyscale(1 - (time.time() - playerenteredmaptime) / 3)
-
-                print(playerleftmaptime)
-                print(playerenteredmaptime)
-
-            for ship in self.ships:
-                if ship.getTarget() not in self.assets and ship.getTarget():
-                    raise Exception("Error, ship's target was not removed.")
 
             #Updates the cameras position based on userinput
             #NOTE as of this stage userinput is crude. Movement directions to not account for the look direction.

@@ -10,7 +10,7 @@ from OpenGL.wrapper import none_or_pass
 
 import internal.globalvariables as progvar
 from memory_profiler import profile
-import glm
+from pyglm import glm
 import pygame
 from math import *
 import random
@@ -117,15 +117,15 @@ class StarShipTemplate(ActorTemplate):
         self.__ry -= self.__ry / 100
         self.__rr -= self.__rr / 10
 
-        rotation = glm.mat4(1)
+        rm = 0
         if self.__rp or self.__ry or self.__rr:
 
             rm = self.__rp if self.__rp > 0 else -self.__rp
             rm += self.__ry if self.__ry > 0 else -self.__ry
             rm += self.__rr if self.__rr > 0 else -self.__rr
 
-            rotation *= glm.rotate(self.__maxrotatespeedc * rm, (self.__rp, self.__ry, self.__rr))
-        self.rotate(rotation)
+        rotation = glm.rotate(self.__maxrotatespeedc * rm, (self.__rp, self.__ry, self.__rr)) if (self.__rp or self.__ry or self.__rr) else glm.mat4(1)
+        self.rotate(glm.mat4(rotation))
         self.translate(glm.translate((self.getRot() * glm.vec4(self.__dx, self.__dy, self.__dz, 0)).xyz))
 
     def pitch(self,degree):
@@ -232,15 +232,7 @@ class AIShip(StarShipTemplate):
             self.__lazer.setvisible()
             self.__firing = False
 
-        targetexists = False
-        for enemyteam in self.__team.getEnemies():
-            if enemyteam.shipInTeam(self.__target):
-                targetexists = True
-
-        if (not self.__target) or (not targetexists):
-            self.__target = self.__team.getRandomEnemy()
-
-        if self.__target not in progvar.ASSETS or self.__target not in progvar.SHIPS:
+        if not self.__target or self.__target not in self.__team.getAllEnemies():
             self.__target = self.__team.getRandomEnemy()
 
         if self.__target:
@@ -349,7 +341,7 @@ class AIShip(StarShipTemplate):
 
 
     def damage(self,points,attacker=None):
-        if attacker:
+        if attacker and self.__AI:
             self.__target = attacker
         if StarShipTemplate.damage(self,points,attacker):
             self.__team.removeFromTeam(self)

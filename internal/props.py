@@ -11,7 +11,7 @@ from OpenGL.GL import *
 from ctypes import c_void_p
 import pygame
 import numpy
-import glm
+from pyglm import glm
 
 #Parent class used to define global functions.
 class Object:
@@ -436,6 +436,7 @@ class ScreenSpaceSprite:
         self.__rotation = glm.mat4(1)
         self.__scale = glm.mat4(1)
         self.__rect = image.get_rect()
+        self.__image = image
 
         self.changeImage(image)
     def drawObj(self, worldMatrix, perspectiveMatrix,
@@ -487,6 +488,7 @@ class ScreenSpaceSprite:
         return False
     def changeImage(self, imagedata):
         self.__rect = imagedata.get_rect()
+        self.__image = imagedata
         self.texture = glGenTextures(1)
         glBindTexture(GL_TEXTURE_2D, self.texture)
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT)
@@ -531,6 +533,9 @@ class ScreenSpaceSprite:
 
     def getScale(self):
         return self.__scale
+
+    def getImage(self):
+        return self.__image
 
     # Gets the value of the position, rotation, and scale rotation multiplied together.
     def getMatrix(self):

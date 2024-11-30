@@ -7,7 +7,7 @@ from OpenGL.GL import *
 from ctypes import c_void_p
 import pygame
 import numpy
-import glm
+from pyglm import glm
 from math import *
 
 #A helper function used to load shaders (called by the camera)
