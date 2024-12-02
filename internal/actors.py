@@ -347,8 +347,6 @@ class AIShip(StarShipTemplate):
         if StarShipTemplate.damage(self,points,attacker):
             self.__team.removeFromTeam(self)
             self.__lazer.removefromgame()
-            self.__target = None
-            self.__team = None
             return True
         return False
     def disableAI(self):
