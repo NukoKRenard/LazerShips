@@ -4,33 +4,23 @@ This file holds code for actors. Each actor holds a prop (called a costume) whic
 Actors are dynamic with behaviors. Like a starship with an AI pilot, or a game object,
 actors effect the flow of the game.
 """
-import time
-
-from OpenGL.wrapper import none_or_pass
-
 import internal.globalvariables as progvar
-from memory_profiler import profile
-from pyglm import glm
+import glm
 import pygame
 from math import *
 import random
 import internal.props as props
 
-global SHIPLOCRAD
-SHIPLOCRAD = .95
+global SHIPLOCKMAXDOT
+SHIPLOCKMAXDOT = .95
 
 #This is a template for an actor type. Sets some default values.
-class ActorTemplate:
-    def __init__(self,costumes,ID):
+class Actor:
+    def __init__(self,costumes):
         self.__translation = glm.mat4(1)
         self.__rotation = glm.mat4(1)
         self.__scale = glm.mat4(1)
         self.costumes = costumes
-
-        self.__ID = ID
-
-    def getID(self):
-        return self.__ID
 
     def getIsActor(self):
         return True
@@ -85,12 +75,12 @@ class ActorTemplate:
             print(f"{self} not in assets list.")
 
 #This is a template for a starship type. Has some basic movement functions
-class StarShipTemplate(ActorTemplate):
+class StarShipTemplate(Actor):
     def __init__(self,
-                 starshipCostumes,ID,
+                 starshipCostumes,
                  minSpeed=0,maxSpeed=5,maxrotatespeed = 1/10,
                  maxhealth = 1):
-        ActorTemplate.__init__(self,starshipCostumes,ID)
+        Actor.__init__(self, starshipCostumes)
         self.__health = maxhealth
         self.__maxhealth = maxhealth
 
@@ -107,7 +97,7 @@ class StarShipTemplate(ActorTemplate):
         self.__rr = 0
 
     def update(self):
-        ActorTemplate.update(self)
+        Actor.update(self)
 
         self.__dx -= self.__dx / 100
         self.__dy -= self.__dy / 100
@@ -199,7 +189,7 @@ class StarShipTemplate(ActorTemplate):
     def getVelocity(self):
         return glm.vec3(self.__dx,self.__dy,self.__dz)
     def removefromgame(self):
-        ActorTemplate.removefromgame(self)
+        Actor.removefromgame(self)
         try:
             progvar.SHIPS.remove(self)
         except:
@@ -209,8 +199,8 @@ class StarShipTemplate(ActorTemplate):
                 ship.switchtarget(1)
 
 class AIShip(StarShipTemplate):
-    def __init__(self,shipmodel,ID,team,shipsinplay):
-        StarShipTemplate.__init__(self,shipmodel,ID)
+    def __init__(self,shipmodel,Name,team,shipsinplay):
+        StarShipTemplate.__init__(self,shipmodel)
         self.__team = team
         self.__target = self.__team.getRandomEnemy()
         self.__recklessness = random.uniform(0,1)
@@ -220,6 +210,7 @@ class AIShip(StarShipTemplate):
         self.__firing = False
         self.__enemyDot = 1
         self.__hasLock = False
+        self.__name = Name
 
         self.__lazer = props.Lazer((self.getPos()*glm.vec4(0,0,0,1)).xyz,(self.getPos()*glm.vec4(0,0,0,1)).xyz,self.__team.getTeamColor())
         progvar.ASSETS.append(self.__lazer)
@@ -241,7 +232,7 @@ class AIShip(StarShipTemplate):
             selfdir = self.getRot() * glm.vec4(0, 0, 1, 1)
             self.__enemyDot = glm.dot(targetdir.xyz, selfdir.xyz)
 
-            self.__hasLock = self.__enemyDot > SHIPLOCRAD and glm.length(targetpos-(self.getPos()*glm.vec4(0,0,0,1))) < 300
+            self.__hasLock = self.__enemyDot > SHIPLOCKMAXDOT and glm.length(targetpos - (self.getPos() * glm.vec4(0, 0, 0, 1))) < 300
 
             if self.__AI:
                 localtargetdir = glm.inverse(self.getRot())*targetdir
@@ -331,7 +322,7 @@ class AIShip(StarShipTemplate):
             selfdir = self.getRot()*glm.vec4(0,0,1,1)
             self.__lazer.setpos(start=(self.getPos() * glm.vec4(0, 0, 0, 1)).xyz)
 
-            if glm.dot(targetdir.xyz,selfdir.xyz) > SHIPLOCRAD and glm.length(targetpos-(self.getPos()*glm.vec4(0,0,0,1))) < 300:
+            if glm.dot(targetdir.xyz,selfdir.xyz) > SHIPLOCKMAXDOT and glm.length(targetpos - (self.getPos() * glm.vec4(0, 0, 0, 1))) < 300:
                 self.__lazer.setpos(end=(self.__target.getPos() * glm.vec4(0, 0, 0, 1)).xyz)
                 if self.__target.damage(.001*progvar.DELTATIME,self):
                         self.__target = None
@@ -357,3 +348,5 @@ class AIShip(StarShipTemplate):
         return self.__hasLock
     def getTargetDot(self):
         return self.__enemyDot
+    def getName(self):
+        return self.__Name

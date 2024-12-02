@@ -4,33 +4,72 @@ This file holds code for props that can be drawn to a scene. Props are static ob
 They can move and rotate, but have no way of doing this on their own and it can only be done through a external function.
 Props would make up static parts of the game, like the level geomery, or a tree, something to show, but with no behavior.
 """
-from pygame.examples.cursors import image
 
 import internal.globalvariables as progvar
 from OpenGL.GL import *
 from ctypes import c_void_p
 import pygame
 import numpy
-from pyglm import glm
+import glm
 
 #Parent class used to define global functions.
-class Object:
+class Prop:
+    def __init__(self):
+        self.__translation = glm.mat4(1)
+        self.__rotation = glm.mat4(1)
+        self.__scale = glm.mat4(1)
+
     def removefromgame(self):
         try:
             progvar.ASSETS.remove(self)
         except:
             print(f"{self} not in assets list.")
 
+    # Only actors have update function. This method stops crashes by not allowing non actors to be updated.
+    def getIsActor(self):
+        return False
+
+    # Movement functions
+    def translate(self, translation):
+        self.__translation *= translation
+
+    def setpos(self, position):
+        self.__translation = position
+
+    def getPos(self):
+        return self.__translation;
+
+    # Rotation functions
+    def rotate(self, angle):
+        self.__rotation *= angle
+
+    def setrot(self, rotation):
+        self.__rotation = rotation
+
+    def getRot(self):
+        return self.__rotation
+
+    # Scaling functions
+    def resize(self, resize):
+        self.__scale *= resize
+
+    def setScale(self, size):
+        self.__scale = size
+
+    def getScale(self):
+        return self.__scale
+
+    # Gets the value of the position, rotation, and scale rotation multiplied together.
+    def getMatrix(self):
+        return self.translation * self.rotation * self.scale
+
+
 #This is a basic model, everything you see on screen are props or costumes (costumes are props connected to actors.)
-class Model(Object):
+class Model(Prop):
     def __init__(self, ObjFilePath, ColourMapPath, GlowMapPath, ID, shaderID = 0, directXTexture = True):
-        #Props move using matrix math.
-        self.__translation = glm.mat4(1)
-        self.__rotation = glm.mat4(1)
-        self.__scale = glm.mat4(1)
+        Prop.__init__(self)
 
         self.__shaderID = shaderID
-        self.__ID = ID
         objData = []
 
         #Opens the file and read it
@@ -149,40 +188,6 @@ class Model(Object):
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, image_width, image_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, image)
         glGenerateMipmap(GL_TEXTURE_2D)
 
-    #Get the props ID
-    def getID(self):
-        return self.__ID
-    #Only actors have update function. This method stops crashes by not allowing non actors to be updated.
-    def getIsActor(self):
-        return False
-
-    #Movement functions
-    def translate(self,translation):
-        self.__translation *= translation
-    def setpos(self,position):
-        self.__translation = position
-    def getPos(self):
-        return self.__translation;
-
-    #Rotation functions
-    def rotate(self,angle):
-        self.__rotation *= angle
-    def setrot(self,rotation):
-        self.__rotation = rotation
-    def getRot(self):
-        return self.__rotation
-
-    #Scaling functions
-    def resize(self,resize):
-        self.__scale *= resize
-    def setScale(self,size):
-        self.__scale = size
-    def getScale(self):
-        return self.__scale
-
-    #Gets the value of the position, rotation, and scale rotation multiplied together.
-    def getMatrix(self):
-        return self.translation * self.rotation * self.scale
 
     #Draws the object to the screen. This similar to the pygame sprite's draw function.
     def drawObj(self,worldMatrix,perspectiveMatrix,
@@ -196,7 +201,7 @@ class Model(Object):
         self.bindTexture()
         #Binds the skybox texture (This is used to calculate reflections.)
         progvar.SKYBOX.bindTexture(GL_TEXTURE2)
-        objMatrix = parentMatrix*(self.__translation * self.__rotation * self.__scale)
+        objMatrix = parentMatrix*(self.getPos() * self.getRot() * self.getScale())
 
         #Binds the shaderprogram and buffers. (Tells OpenGL that these are the shaders/buffers that we want to use to draw the ship)
         glDepthFunc(GL_LESS)
@@ -233,9 +238,9 @@ class Model(Object):
         glBindTexture(GL_TEXTURE_2D, self.glow)
 
 #This is the skybox class that shows the space scene the ships all fight in.
-class Skybox(Object):
+class Skybox(Prop):
     def __init__(self, texturepath,ID):
-        self.__ID = ID
+        Prop.__init__(self)
 
         #Vertex data for a cube. This is what the skybox is put on.
         vertexdata = (
@@ -302,9 +307,7 @@ class Skybox(Object):
             #Loads the texture into the cubemap.
             glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i,0,GL_RGBA,image_width,image_height,0,GL_RGBA,GL_UNSIGNED_BYTE,filedata)
 
-    #Get function for the ID of the prop.
-    def getID(self):
-        return self.__ID
+
 
     #Draws the object to the screen.
     def drawObj(self, worldMatrix, perspectiveMatrix,
@@ -345,8 +348,9 @@ class Skybox(Object):
         glBindTexture(GL_TEXTURE_CUBE_MAP, self.texture)
 
 #A special effects props that visualises attacks of different ships.
-class Lazer(Object):
+class Lazer(Prop):
     def __init__(self, startpos, endpos, color):
+        Prop.__init__(self)
         #Weither the lazer will be drawn to the screen or not
         self.__isvisible = False
 
@@ -430,11 +434,9 @@ class Lazer(Object):
         if end != None:
             self.__end = glm.vec4(end,1)
 
-class ScreenSpaceSprite:
+class ScreenSpaceSprite(Prop):
     def __init__(self,image):
-        self.__translation = glm.mat4(1)
-        self.__rotation = glm.mat4(1)
-        self.__scale = glm.mat4(1)
+        Prop.__init__(self)
         self.__rect = image.get_rect()
         self.__image = image
 
@@ -446,7 +448,7 @@ class ScreenSpaceSprite:
                 parentMatrix=glm.vec4(1)
                 ):
 
-        objMatrix = (self.__translation * self.__rotation * self.__scale)
+        objMatrix = (self.getPos() * self.getRot() * self.getScale())
 
         imgvertsize = glm.vec2(self.__rect.size)/glm.vec2(progvar.CAMERA.getScreenDimensions())/2
 
@@ -500,46 +502,11 @@ class ScreenSpaceSprite:
         image = pygame.image.tobytes(imagedata, "RGBA")
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, image_width, image_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, image)
         glGenerateMipmap(GL_TEXTURE_2D)
+    def getImage(self):
+        return self.__image
     def bindTexture(self):
         glActiveTexture(GL_TEXTURE0)
         glBindTexture(GL_TEXTURE_2D,self.texture)
-
-    # Movement functions
-    def translate(self, translation):
-        self.__translation *= translation
-
-    def setpos(self, position):
-        self.__translation = position
-
-    def getPos(self):
-        return self.__translation;
-
-    # Rotation functions
-    def rotate(self, angle):
-        self.__rotation *= angle
-
-    def setrot(self, rotation):
-        self.__rotation = rotation
-
-    def getRot(self):
-        return self.__rotation
-
-    # Scaling functions
-    def resize(self, resize):
-        self.__scale *= resize
-
-    def setScale(self, size):
-        self.__scale = size
-
-    def getScale(self):
-        return self.__scale
-
-    def getImage(self):
-        return self.__image
-
-    # Gets the value of the position, rotation, and scale rotation multiplied together.
-    def getMatrix(self):
-        return self.translation * self.rotation * self.scale
 
 class ScreenSpaceLabel(ScreenSpaceSprite):
     def __init__(self,text,color=(255,255,255),size=30,font="Arial"):

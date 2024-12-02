@@ -7,8 +7,10 @@ from OpenGL.GL import *
 from ctypes import c_void_p
 import pygame
 import numpy
-from pyglm import glm
+import glm
 from math import *
+
+from internal.actors import Actor
 
 #A helper function used to load shaders (called by the camera)
 def loadShaderProgram(vertexshader,fragmentshader):
@@ -47,8 +49,11 @@ def loadShaderProgram(vertexshader,fragmentshader):
     return shaderprogram
 
 #This is the basic camera class. It is used for debugging, and is a parent class for other camera types.
-class Camera:
-    def __init__(self,fovy):
+class Camera(Actor):
+    def __init__(self,scene,fovy):
+        Actor.__init__(self,[])
+        self.__scene = scene
+
         self.screensize = (1080, 720)
         self.perspectiveMatrix = glm.perspective(radians(fovy),self.screensize[0]/self.screensize[1],.001,1000)
         self.worldMatrix = glm.mat4(1)
@@ -115,7 +120,7 @@ class Camera:
         glEnable(GL_DEPTH_TEST)
         glDepthFunc(GL_LESS)
 
-    def renderScene(self,scenemodeldata):
+    def render(self):
         #Rencers the scene to the pre processing buffer
         glBindFramebuffer(GL_FRAMEBUFFER, self.preProcessBuffer)
         glViewport(0, 0, self.screensize[0], self.screensize[1])
@@ -123,7 +128,7 @@ class Camera:
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,self.indexBuffer)
         self.worldMatrix = glm.lookAt(glm.vec3(self.position), glm.vec3(self.position + self.direction),glm.vec3(self.up))
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
-        for object in scenemodeldata:
+        for object in self.__scene:
             object.drawObj(self.worldMatrix,self.perspectiveMatrix,
                            (self.starshipShader,self.skyboxShader,self.lazerShader,self.spriteShader),
                            self.vertexBuffer,
@@ -169,7 +174,8 @@ class Camera:
         return self.screensize
 
     #Calculates camera movement, Very crude as of right now
-    def updateCamera(self,deltaTime):
+    def update(self, deltaTime):
+        self.render()
         if pygame.mouse.get_pos() != (0,0) and pygame.mouse.get_pos() != (self.screensize[0]//2,self.screensize[1]//2):
             mx, my = ((pygame.mouse.get_pos()[0] / self.screensize[0]) - .5)*2, ((pygame.mouse.get_pos()[1] / self.screensize[1]) - .5)*2
             self.mx += mx
@@ -203,11 +209,12 @@ class Camera:
         self.__greyscale = value
 
 class ShipCamera(Camera):
-    def __init__(self,fovy,parentship=None):
-        Camera.__init__(self,fovy)
+    def __init__(self,scene,fovy,parentship=None):
+        Camera.__init__(self,scene,fovy)
         self.__parentship = parentship
 
-    def updateCamera(self):
+    def update(self):
+        self.render()
         if self.__parentship != None:
             self.position = self.__parentship.getPos() * (self.__parentship.getRot() * (glm.vec4(0, 10, -20, 1)-glm.vec4(self.__parentship.getVelocity()*5,0)))
             self.direction = self.__parentship.getRot() * glm.vec4(0, 0, 1, 0)
