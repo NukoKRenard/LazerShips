@@ -300,9 +300,10 @@ class AIShip(StarShipTemplate):
                 else:
                     self.__timesincelastfire += pygame.time.get_ticks()*progvar.DELTATIME
                     self.__lazer.setnotvisible()
-            else:
+
                 if self.__timesincelastfire*60 > 20:
                     self.__target = self.__team.getRandomEnemy()
+                    self.__timesincelastfire = 0
 
     def switchtarget(self, number):
         if self.__target != None:

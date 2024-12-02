@@ -154,8 +154,8 @@ class Program:
                 elif playerthrottle < -1:
                     playerthrottle = -1
                 self.player.throttleSpeed(playerthrottle*self.player.getMaxSpeed()-self.player.getVelocity().z)
-                border = 100
-                mousepos = ((glm.vec2(pygame.mouse.get_pos()) / glm.vec2(self.maincam.getScreenDimensions()))-.5)*2
+                border = 200
+                mousepos = ((glm.vec2(pygame.mouse.get_pos()) / glm.vec2(self.maincam.getScreenDimensions()))-.5)*5
                 mousepospx = [pygame.mouse.get_pos()[0],pygame.mouse.get_pos()[1]]
                 if mousepospx[0] <= border*self.maincam.getAspectRatio():
                     mousepospx[0] = border*self.maincam.getAspectRatio()

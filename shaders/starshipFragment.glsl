@@ -35,7 +35,7 @@ void main()
     //To calculate this we take the camera's position, reflect it across the surface of the ship, and find how close it is to the light source. The closer the brighter.
     vec4 highlights =vec4(clamp(pow(dot(normalize(camera_pos.xyz-position),normalize(reflect(lightPos,normal.xyz))),10),0,1))*texture(glowMap,texCoord).r;
     //This function generates how the sky we see reflects on the ships hull. We reflect the camera's position on the surface of the ship, and then sample the cubemap using that.
-    vec4 reflections = clamp(texture(reflection,reflect(camera_pos.xyz-position,normal.xyz))*texture(glowMap,texCoord).r,0,1);
+    vec4 reflections = clamp(texture(reflection,reflect(camera_pos.xyz,normal.xyz))*texture(glowMap,texCoord).r,0,1);
 
     //Takes all of what we just calculated and sends it to the pixel.
     fragColor = vec4((littexture+highlights+reflections).xyz,1.0);
