@@ -4,11 +4,7 @@ This file is the entry point of the program. It holds the Program() class which 
 """
 #Import and Initialize
 import pygame
-import math
-from OpenGL.GL import *
-import numpy
-import glm
-from math import *
+import pyglm.glm as glm
 import copy
 import random
 
@@ -24,29 +20,40 @@ class Program:
         pygame.init()
 
         #Display
-        #The camera handles the screen and drawing functions.
-        progvar.CAMERA = camera.ShipCamera(progvar.ASSETS,90)
-        progvar.ASSETS.append(progvar.CAMERA)
+        #Creates the pygame window.
+        screen = pygame.display.set_mode((1080,720), pygame.OPENGL | pygame.DOUBLEBUF)
+
+
+        cameraoffset = glm.translate((0,10,-20))
+        #Creates a camera actor, and tells it to draw directly to the pygame window. (Setting rendertarget to 0 means it will draw directly to the screen instead of a texture.)
+        progvar.CAMERA = camera.ShipCamera(90,screen.get_size(),rendertarget=0,offset=cameraoffset)
 
         # Entities
-        #The self.assets list is used for drawing to the screen. If something needs to be shown on screen it needs to be here.
+        #The progvar.ASSETS list is used for drawing to the screen. If something needs to be shown on screen it needs to be here.
         progvar.ASSETS = []
-        #The self.ships list is used for detecting colissions. It is faster to use a seperate list than to check every item in the draw list.
+        #The progvar.SHIPS list is used for detecting colissions. It is faster to use a seperate list than to check every item in the draw list.
         progvar.SHIPS = []
 
         #Teams are how the ships allignthemselves and choose their enemies. Each ship has a team, which is how they pick targets,
-        avaxTeam = datatypes.Team("Avax", {}, {},(.5, 1, 1))
-        tx01Team = datatypes.Team("TX-01", {}, {},(1, 1, .5))
+        avaxTeam = datatypes.Team("Avax", [], [],(.5, 1, 1))
+        tx01Team = datatypes.Team("TX-01", [], [],(1, 1, .5))
+
+        # These two functions cause the teams to add the other to their enemy list. This allows all of the ships in the team to start fighting.
+        avaxTeam.declareWar(tx01Team)
+        tx01Team.declareWar(avaxTeam)
 
         blueteam_ship = props.Model("levelobjects/Starship.obj",
                                "levelobjects/texturedata/StarshipColourMapBlue.png",
-                               "levelobjects/texturedata/StarshipRoughnessGlowmap.png", "blueteam-costume")
+                               "levelobjects/texturedata/StarshipRoughnessGlowmap.png")
         redteam_ship = props.Model("levelobjects/Starship.obj",
                                     "levelobjects/texturedata/StarshipColourMapRed.png",
-                                    "levelobjects/texturedata/StarshipRoughnessGlowmap.png", "redteam-costume")
+                                    "levelobjects/texturedata/StarshipRoughnessGlowmap.png")
         #Creates a skybox
-        progvar.SKYBOX = props.Skybox("skyboxes/spaceSkybox0", "level-skybox")
+        progvar.SKYBOX = props.Skybox("skyboxes/spaceSkybox0")
         progvar.ASSETS.append(progvar.SKYBOX)
+
+        #Adds the camera to the assets list (They are treated the same as actors in game code and need to be updated in order to render.)
+        progvar.ASSETS.append(progvar.CAMERA)
 
         #Adds a number of ships for each team
         for i in range(20):
@@ -58,7 +65,7 @@ class Program:
             tx01Team.addToTeam(ship)
             progvar.ASSETS.append(ship)
 
-        # This checks all of the assets in the self.assets list, and if it is a ship type it adds them to the self.ships type
+        # This checks all of the assets in the progvar.ASSETS list, and if it is a ship type it adds them to the progvar.SHIPS list
         for asset in progvar.ASSETS:
             if isinstance(asset, actors.AIShip):
                 progvar.SHIPS.append(asset)
@@ -67,14 +74,9 @@ class Program:
         for ship in progvar.SHIPS:
             ship.setpos(glm.translate(glm.vec3(random.randint(-500, 500), random.randint(-500, 500), random.randint(-500, 500))))
 
-
-        #These two functions cause the teams to add the other to their enemy list. This allows all of the ships in the team to start fighting.
-        avaxTeam.declareWar(tx01Team)
-        tx01Team.declareWar(avaxTeam)
-
         #Adds the player:
         player = avaxTeam.getRandomMember()
-        progvar.CAMERA.attachToShip(progvar.CAMERA)
+        progvar.CAMERA.attachToShip(player)
         if player:
             player.disableAI()
 
@@ -106,7 +108,6 @@ class Program:
         playerenteredmaptime = 0
         clock = pygame.time.Clock()
         userhasquit = False
-        #This variable is only for debugging. It will be removed before release.
 
         #Loop
         while not userhasquit:
@@ -165,12 +166,12 @@ class Program:
                 player.pitch(-mousepos.y-player.getPitchVelocity())
             if player not in progvar.SHIPS:
                 player = avaxTeam.getRandomMember()
-                if player != None:
+                if player:
                     progvar.CAMERA.attachToShip(player)
                     player.disableAI()
             #Refresh
             for asset in progvar.ASSETS:
-                if asset.getIsActor():
+                if issubclass(type(asset),actors.Actor):
                     asset.update()
 
             playertarget = player.getTarget()
@@ -228,7 +229,7 @@ class Program:
 
                 progvar.CAMERA.setPostProssGreyscale(1 - ((pygame.time.get_ticks()*60*progvar.DELTATIME) - playerenteredmaptime) / 10)
 
-            #This function loops through all of the objects in the self.assets list and draws them with their drawObj() function
+            #This function loops through all of the objects in the progvar.ASSETS list and draws them with their drawObj() function
             pygame.display.flip()
 
 

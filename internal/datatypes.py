@@ -4,11 +4,11 @@ This file contains datatypes for the game. These datatypes have no physical repr
 """
 
 import random
-import glm
+import pyglm.glm as glm
 
 #A team is a collection of ships. A ship's team can be used to get allies, and enemies.
 class Team:
-    def __init__(self,teamname,ships,enemyteams,teamcolor):
+    def __init__(self,teamname : str,ships : list,enemyteams : list, teamcolor : tuple[float,float,float]):
         self.__name = teamname
         self.__ships = list(ships)
         self.__enemies = list(enemyteams)
@@ -27,10 +27,8 @@ class Team:
                 return self.__ships[0]
     #Removes a ship from the team.
     def removeFromTeam(self,target):
-        try:
+        if target in self.__ships:
             self.__ships.remove(target)
-        except:
-            print(f"{target} not in team {self}...")
     #Adds a ship to the team
     def addToTeam(self,target):
         self.__ships.append(target)
