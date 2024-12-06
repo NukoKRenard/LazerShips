@@ -7,7 +7,7 @@ from OpenGL.GL import *
 from ctypes import c_void_p
 import pygame
 import numpy
-import pyglm.glm as glm
+import glm
 from math import *
 
 from internal.actors import Actor, StarShipTemplate

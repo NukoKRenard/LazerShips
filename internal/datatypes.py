@@ -4,7 +4,7 @@ This file contains datatypes for the game. These datatypes have no physical repr
 """
 
 import random
-import pyglm.glm as glm
+import glm
 
 #A team is a collection of ships. A ship's team can be used to get allies, and enemies.
 class Team:

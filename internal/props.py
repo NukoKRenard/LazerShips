@@ -10,7 +10,7 @@ from OpenGL.GL import *
 from ctypes import c_void_p
 import pygame
 import numpy
-import pyglm.glm as glm
+import glm
 
 #Parent class used to define global functions.
 class Prop:
@@ -186,8 +186,8 @@ class Model(Prop):
     #Draws the object to the screen. This similar to the pygame sprite's draw function.
     def drawObj(self,worldMatrix : glm.mat4,perspectiveMatrix : glm.mat4,
                 shaderlist : list[int],
-                vertexbufferlist : list[int],
-                indexbufferlist : list[int],
+                vertexbuffer: list[int],
+                indexbuffer : list[int],
                 parentMatrix : glm.mat4 =glm.vec4(1)
                 ) -> None:
 
@@ -357,7 +357,7 @@ class Lazer(Prop):
                 shaderlist : list[int],
                 vertexbufferlist : list[int],
                 indexbufferlist : list[int],
-                parentMatrix : glm.mat4 = glm.vec4(1)
+                parentMatrix : glm.mat4(1) = glm.mat4(1)
                 ) -> None:
 
         if self.__isvisible:
@@ -433,10 +433,10 @@ class ScreenSpaceSprite(Prop):
                 shaderlist : list[int],
                 vertexbufferlist : list[int],
                 indexbufferlist : list[int],
-                parentMatrix : glm.mat4 = glm.vec4(1)
+                parentMatrix : glm.mat4 = glm.mat4(1)
                 ) -> None:
 
-        objMatrix = (self.getPos() * self.getRot() * self.getScale())
+        objMatrix = parentMatrix * (self.getPos() * self.getRot() * self.getScale())
 
         imgvertsize = glm.vec2(self.__rect.size)/glm.vec2(progvar.CAMERA.getScreenDimensions())/2
 

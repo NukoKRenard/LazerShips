@@ -4,10 +4,11 @@ This file holds code for actors. Each actor holds a prop (called a costume) whic
 Actors are dynamic with behaviors. Like a starship with an AI pilot, or a game object,
 actors effect the flow of the game.
 """
+import copy
+
 import internal.globalvariables as progvar
-import pyglm.glm as glm
+import glm
 import pygame
-from typing import Union
 import random
 import internal.props as props
 import internal.datatypes as datatypes
@@ -29,7 +30,7 @@ class Actor:
                 shaderlist : list[int],
                 vertexbufferlist : list[int],
                 indexbufferlist : list[int],
-                parentMatrix : glm.mat4 = glm.mat4(1)
+                parentMatrix : glm.mat4(1) = glm.mat4(1)
                 ) -> None:
         for costume in self.__costumes:
             costume.drawObj(
@@ -164,7 +165,7 @@ class StarShipTemplate(Actor):
         elif self.__dy < -self.__maxspeed/2:
             self.__dy = -self.__maxspeed / 2
 
-    def damage(self,points : float,attacker : Union[Actor : None] = None) -> bool:
+    def damage(self,points : float,attacker : Actor | None = None) -> bool:
         if points < 0:
             raise Exception(f"Starship recieved {points} damage, damage points can not be negative.")
         self.__health -= points
@@ -174,13 +175,20 @@ class StarShipTemplate(Actor):
         return False
 
     def heal(self,points : float) -> None:
-        if points < 0:
+        if points < 0 and points != -1:
             raise Exception(f"Starship recieved {points} healing, healing points can not be negative.")
         self.__health += points
+
+        #If the health value is negative 1 it will fully heal the ship.
+        if points == -1:
+            self.__health = self.__maxhealth
+
         if self.__health >= self.__maxhealth:
             self.__health = self.__maxhealth
     def getHealth(self) -> float:
         return self.__health
+    def getMaxHealth(self):
+        return self.__maxhealth
 
     def getYawVelocity(self) -> float:
         return self.__ry
@@ -334,7 +342,7 @@ class AIShip(StarShipTemplate):
             self.__lazer.setpos(end=((self.getPos() * glm.vec4(0, 0, 0, 1)) + (self.getRot() * glm.vec4(0, 0, 100, 0))).xyz)
 
 
-    def damage(self,points : float ,attacker : Union[Actor : None] = None) -> bool:
+    def damage(self,points : float ,attacker : Actor | None = None) -> bool:
         if attacker and self.__AI:
             self.__target = attacker
         if StarShipTemplate.damage(self,points,attacker):
@@ -353,3 +361,60 @@ class AIShip(StarShipTemplate):
         return self.__enemyDot
     def getName(self) -> str:
         return self.__name
+
+class healthBar(Actor):
+   def __init__(self, color : tuple[int,int,int] = (0,200,200), ship : AIShip = None):
+       self.__target = ship
+
+       self.__color = color
+       self.__image = pygame.surface.Surface((1000,100))
+       pygame.draw.rect(self.__image,(100,100,100),self.__image.get_rect(),border_radius=50)
+       rect = pygame.Rect(10,10,980,80)
+       pygame.draw.rect(self.__image, self.__color, rect, border_radius=50)
+       self.__image.set_colorkey((0,0,0))
+
+       self.__sprite = props.ScreenSpaceSprite(self.__image)
+       Actor.__init__(self,[self.__sprite])
+
+       if self.__target:
+           self.__lastframehealth = self.__target.getHealth()
+
+   def attachToShip(self, ship : AIShip) -> None:
+       self.__lastframehealth = ship.getHealth()
+       self.__target = ship
+
+   def changeColor(self, color : tuple[int,int,int]) -> None:
+       self.__color = color
+   def update(self):
+       Actor.update(self)
+
+       if self.__target:
+           health = self.__target.getHealth()
+           if health != self.__lastframehealth:
+               self.__lastframehealth = health
+
+               self.__image.fill((0,0,0))
+
+               self.__image = pygame.surface.Surface((1000, 100))
+               pygame.draw.rect(self.__image, (100, 100, 100), self.__image.get_rect(), border_radius=50)
+               rect = pygame.Rect(10, 10, 980*health, 80)
+               pygame.draw.rect(self.__image, self.__color, rect, border_radius=50)
+               self.__image.set_colorkey((0, 0, 0))
+
+               self.__sprite.changeImage(self.__image)
+
+class explosioneffect(Actor):
+    def __init__(self):
+        explosionparticles = []
+
+        explosionparticle = props.Model("levelobjects/Starship.obj",
+                               "levelobjects/texturedata/StarshipColourMapBlue.png",
+                               "levelobjects/texturedata/StarshipRoughnessGlowmap.png")
+        explosionparticle.resize(glm.scale((.5,.5,.5)))
+
+        for i in range(50):
+            thisparticle = copy.deepcopy(explosionparticle)
+            thisparticle.translate(glm.translate((random.uniform(),random.uniform(),random.uniform())))
+            explosionparticles.append(explosionparticles)
+
+        Actor.__init__(self,explosionparticle)

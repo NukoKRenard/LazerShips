@@ -4,7 +4,7 @@ This file is the entry point of the program. It holds the Program() class which 
 """
 #Import and Initialize
 import pygame
-import pyglm.glm as glm
+import glm
 import copy
 import random
 
@@ -24,7 +24,7 @@ class Program:
         screen = pygame.display.set_mode((1080,720), pygame.OPENGL | pygame.DOUBLEBUF)
 
 
-        cameraoffset = glm.translate((0,10,-20))
+        cameraoffset = glm.translate((0,5,-20))
         #Creates a camera actor, and tells it to draw directly to the pygame window. (Setting rendertarget to 0 means it will draw directly to the screen instead of a texture.)
         progvar.CAMERA = camera.ShipCamera(90,screen.get_size(),rendertarget=0,offset=cameraoffset)
 
@@ -72,10 +72,16 @@ class Program:
 
         # Randomly sets the position of all of the ships.
         for ship in progvar.SHIPS:
-            ship.setpos(glm.translate(glm.vec3(random.randint(-500, 500), random.randint(-500, 500), random.randint(-500, 500))))
+            mp = progvar.MAPSIZE//2
+            ship.setpos(glm.translate(glm.vec3(random.randint(-mp, mp), random.randint(-mp, mp), random.randint(-mp, mp))))
 
         #Adds the player:
         player = avaxTeam.getRandomMember()
+        playeroutofboundstext = props.ScreenSpaceLabel("Placeholdertext",size=100)
+        progvar.ASSETS.append(playeroutofboundstext)
+        playerhealthbar = actors.healthBar(ship=player)
+        playerhealthbar.setpos(glm.translate((0,-.7,-1.0)))
+        progvar.ASSETS.append(playerhealthbar)
         progvar.CAMERA.attachToShip(player)
         if player:
             player.disableAI()
@@ -104,8 +110,7 @@ class Program:
         #Action
         #Assign key variables
         playerthrottle = .5
-        playerleftmaptime = 0
-        playerenteredmaptime = 0
+        greyscaleamtlastframe = 0
         clock = pygame.time.Clock()
         userhasquit = False
 
@@ -167,13 +172,12 @@ class Program:
             if player not in progvar.SHIPS:
                 player = avaxTeam.getRandomMember()
                 if player:
+                    playerhealthbar.attachToShip(player)
                     progvar.CAMERA.attachToShip(player)
+                    greyscaleamtlastframe = 0
+                    player.heal(-1)
                     player.disableAI()
             #Refresh
-            for asset in progvar.ASSETS:
-                if issubclass(type(asset),actors.Actor):
-                    asset.update()
-
             playertarget = player.getTarget()
             if player and playertarget:
                 targetloc = progvar.CAMERA.getPerspectiveMatrix() * progvar.CAMERA.getWorldMatrix() * playertarget.getPos() * glm.vec4(0, 0, 0, 1)
@@ -203,31 +207,28 @@ class Program:
 
             #Changes the image to greyscale if the player is out of bounds.
             if player and glm.length((player.getPos() * glm.vec4(0, 0, 0, 1))) > progvar.MAPSIZE:
-                playerenteredmaptime = 0
-                if not playerleftmaptime:
-                    playerleftmaptime = (pygame.time.get_ticks()*60*progvar.DELTATIME)
-                    if leavemaptimetext not in progvar.ASSETS:
-                        progvar.ASSETS.append(leavemaptimetext)
+                if greyscaleamtlastframe < 0:
+                    greyscaleamtlastframe = 0
+                greyscaleamtlastframe += progvar.DELTATIME/(60*10)
 
-                #Displays a message warning them to return.
-                playertime = int((pygame.time.get_ticks()*60*progvar.DELTATIME) - playerleftmaptime)
-                countdown = 10 - playertime
-                countdown = countdown if countdown > 0 else 0
-                leavemaptimetext.changeText(f"Return to the fight. You have {countdown} seconds!")
+                playeroutofboundstext.setpos(glm.translate((0,0,0)))
+                playeroutofboundstext.changeText(f"You are leaving the area, return within {10-int(greyscaleamtlastframe*10)}s")
 
-                #Kills the player if they are out of bounds for too long.
-                if 10 - playertime < 0:
-                    player.damage(1)
-
-                progvar.CAMERA.setPostProssGreyscale(((pygame.time.get_ticks()*60*progvar.DELTATIME)-playerleftmaptime)/10)
+                #Kills the player if they have been out of bounds for 10 or more seconds.
+                if greyscaleamtlastframe >= 1:
+                    player.damage(player.getMaxHealth())
             else:
-                playerleftmaptime = 0
-                if not playerenteredmaptime:
-                    if leavemaptimetext in progvar.ASSETS:
-                        progvar.ASSETS.remove(leavemaptimetext)
-                    playerenteredmaptime = (pygame.time.get_ticks()*60*progvar.DELTATIME)
+                playeroutofboundstext.setpos(glm.translate((0,0,1)))
+                if greyscaleamtlastframe > 1:
+                    greyscaleamtlastframe = 1
+                greyscaleamtlastframe -= progvar.DELTATIME/(60*3)
 
-                progvar.CAMERA.setPostProssGreyscale(1 - ((pygame.time.get_ticks()*60*progvar.DELTATIME) - playerenteredmaptime) / 10)
+            progvar.CAMERA.setPostProssGreyscale(greyscaleamtlastframe*2)
+
+            #Updates all of the objects
+            for asset in progvar.ASSETS:
+                if issubclass(type(asset),actors.Actor):
+                    asset.update()
 
             #This function loops through all of the objects in the progvar.ASSETS list and draws them with their drawObj() function
             pygame.display.flip()
