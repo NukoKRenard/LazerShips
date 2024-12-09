@@ -8,6 +8,7 @@ from ctypes import c_void_p
 import pygame
 import numpy
 import glm
+import random
 from math import *
 
 from internal.actors import Actor, StarShipTemplate
@@ -66,6 +67,7 @@ class Camera(Actor):
 
         #Post processing effects
         self.__greyscale = 0
+        self.__shake = 0
 
         #This is the framebuffer the camera will render to. By default it is set to 0 (Directly to the pygame window) but it can be overridden to allow cameras to render to textures.
         self.__rendertarget = rendertarget
@@ -78,9 +80,10 @@ class Camera(Actor):
         self.skyboxShader = loadShaderProgram("shaders/skyboxVertex.glsl", "shaders/skyboxFragment.glsl")
         self.lazerShader = loadShaderProgram("shaders/lazerVertex.glsl", "shaders/lazerFragment.glsl")
         self.spriteShader = loadShaderProgram("shaders/screenSpaceSpriteVertex.glsl", "shaders/screenSpaceSpriteFragment.glsl")
+        self.sparkShader = loadShaderProgram("shaders/sparkVertex.glsl","shaders/sparkFragment.glsl")
 
-        #A special shaderprogram that uses the screens image and manipulates it to post processing affect.
-        self.postProcessingShader = loadShaderProgram("shaders/screenSpaceSpriteVertex.glsl","shaders/postProcessingFragment.glsl")
+        #A special shaderprogram that uses the screen's image and manipulates it to post processing affect.
+        self.postProcessingShader = loadShaderProgram("shaders/postProcessingVertex.glsl","shaders/postProcessingFragment.glsl")
 
         #Creates a buffer to draw the scene to before post processing
         self.preProcessBuffer = glGenFramebuffers(1)
@@ -134,7 +137,7 @@ class Camera(Actor):
         for object in progvar.ASSETS:
             if object not in self.getCostumes():
                 object.drawObj(self.worldMatrix,self.perspectiveMatrix,
-                           (self.starshipShader,self.skyboxShader,self.lazerShader,self.spriteShader),
+                           (self.starshipShader,self.skyboxShader,self.lazerShader,self.spriteShader,self.sparkShader),
                            self.vertexBuffer,
                            self.indexBuffer
                            )
@@ -149,7 +152,7 @@ class Camera(Actor):
              1.0, -1.0, 0.0, 1.0, 0.0
         )
 
-        normalMatrix = glm.translate((0,0,-1))
+        screenTransform = glm.translate((random.random()*self.__shake,random.random()*self.__shake,random.random()*self.__shake))*glm.scale((1+self.__shake,1+self.__shake,1+self.__shake))
 
         vertexdata = numpy.array(vertexdata, dtype=numpy.float32)
 
@@ -163,8 +166,8 @@ class Camera(Actor):
         glEnableVertexAttribArray(0)
         glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), c_void_p(12))
         glEnableVertexAttribArray(1)
-        glUniformMatrix4fv(glGetUniformLocation(self.postProcessingShader, "objectMatrix"), 1, GL_FALSE,
-                           glm.value_ptr(normalMatrix))
+        glUniformMatrix4fv(glGetUniformLocation(self.postProcessingShader, "screenTransform"), 1, GL_FALSE,
+                           glm.value_ptr(screenTransform))
         glUniform1i(glGetUniformLocation(self.postProcessingShader, "image"), 0)
         glUniform1f(glGetUniformLocation(self.postProcessingShader,"greyscale"),self.__greyscale)
 
@@ -212,6 +215,13 @@ class Camera(Actor):
         elif value < 0:
             value = 0
         self.__greyscale = value
+
+    def setPostProssShake(self,value : float) -> None:
+        if value > 1:
+            value = 1
+        elif value < 0:
+            value = 0
+        self.__shake = value
 
 class ShipCamera(Camera):
     def __init__(self,fovy : int,screenwh : tuple[int,int],rendertarget : int =0,parentship : StarShipTemplate | None =None,offset : glm.mat4 = glm.mat4(1)):

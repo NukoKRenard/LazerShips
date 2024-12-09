@@ -63,6 +63,8 @@ class Model(Prop):
     def __init__(self, ObjFilePath : str, ColourMapPath : str, GlowMapPath : str, shaderID : int = 0, directXTexture : bool = True):
         Prop.__init__(self)
 
+        self.__opacity = 1
+
         self.__shaderID = shaderID
         objData = []
 
@@ -221,6 +223,8 @@ class Model(Prop):
         glUniform1i(glGetUniformLocation(shaderlist[0], "glowMap"), 1)
         glUniform1i(glGetUniformLocation(shaderlist[0], "reflection"), 2)
 
+        glUniform1f(glGetUniformLocation(shaderlist[0],"opacity"),self.__opacity)
+
         #Draws the prop to the screen.
         glDrawElements(GL_TRIANGLES, len(self.__indexdata), GL_UNSIGNED_INT, None)
 
@@ -230,6 +234,11 @@ class Model(Prop):
         glBindTexture(GL_TEXTURE_2D,self.texture)
         glActiveTexture(GL_TEXTURE1)
         glBindTexture(GL_TEXTURE_2D, self.glow)
+
+    def setopacity(self,value : float):
+        value = (value if value > 0 else 0) if value < 1 else 1
+
+        self.__opacity = value
 
 #This is the skybox class that shows the space scene the ships all fight in.
 class Skybox(Prop):
@@ -421,6 +430,62 @@ class Lazer(Prop):
             self.__start = glm.vec4(start,1)
         if end != None:
             self.__end = glm.vec4(end,1)
+
+class Spark(Prop):
+    def __init__(self,color  : tuple[int,int,int] = (255,200,0)):
+        Prop.__init__(self)
+        self.__color = color
+
+    def drawObj(self, worldMatrix : glm.mat4, perspectiveMatrix: glm.mat4,
+    shaderlist: list[int],
+    vertexbufferlist: list[int],
+    indexbufferlist: list[int],
+    parentMatrix: glm.mat4 = glm.mat4(1)
+    ) -> None:
+
+        objMatrix = parentMatrix * (self.getPos() * self.getRot() * self.getScale())
+
+        vertexdata = (
+            -1.0, -1.0, 0.0, -1.0, -1.0,
+            -1.0,  1.0, 0.0, -1.0, 1.0,
+             1.0,  1.0, 0.0, 1.0, 1.0,
+             1.0, -1.0, 0.0, 1.0, -1.0
+        )
+
+        indexdata = (
+            0, 1, 2,
+            2, 3, 0
+        )
+
+        self.__vertexdata = numpy.array(vertexdata, dtype=numpy.float32)
+        self.__indexdata = numpy.array(indexdata, dtype=numpy.uint32)
+
+        # Binds the shaderprogram and buffers. (Tells OpenGL that these are the shaders/buffers that we want to use to draw the ship)
+        glDepthFunc(GL_LESS)
+        glUseProgram(shaderlist[4])
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, self.__indexdata.nbytes, self.__indexdata, GL_DYNAMIC_DRAW)
+        glBufferData(GL_ARRAY_BUFFER, self.__vertexdata.nbytes, self.__vertexdata, GL_DYNAMIC_DRAW)
+
+        # Tells the shaders where certain attributes are in the vertexdata list.
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), c_void_p(0))
+        glEnableVertexAttribArray(0)
+        glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), c_void_p(12))
+        glEnableVertexAttribArray(1)
+        glUniformMatrix4fv(glGetUniformLocation(shaderlist[4], "objectMatrix"), 1, GL_FALSE,
+                           glm.value_ptr(objMatrix))
+        glUniformMatrix4fv(glGetUniformLocation(shaderlist[4], "perspectiveMatrix"), 1, GL_FALSE,
+                           glm.value_ptr(perspectiveMatrix))
+        glUniformMatrix4fv(glGetUniformLocation(shaderlist[4], "worldMatrix"), 1, GL_FALSE,
+                           glm.value_ptr(worldMatrix))
+        glUniform3fv(glGetUniformLocation(shaderlist[4],"color"),1,self.__color)
+
+        # Draws the prop to the screen.
+        glDrawElements(GL_TRIANGLES, len(self.__indexdata), GL_UNSIGNED_INT, None)
+
+    def setcolor(self, color : tuple[int,int,int]) -> None:
+        color = (color[0] if color[0] < 256 else 255,color[1] if color[1] < 256 else 255,color[2] if color[2] < 256 else 255)
+        self.__color = color
+
 
 class ScreenSpaceSprite(Prop):
     def __init__(self,image : pygame.surface.Surface | None):

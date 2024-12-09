@@ -5,6 +5,7 @@ Actors are dynamic with behaviors. Like a starship with an AI pilot, or a game o
 actors effect the flow of the game.
 """
 import copy
+from os import times
 
 import internal.globalvariables as progvar
 import glm
@@ -66,6 +67,7 @@ class Actor:
         for costume in self.__costumes:
             if issubclass(type(costume),Actor):
                 costume.update()
+
     def removefromgame(self) -> None:
         if self in progvar.ASSETS:
             progvar.ASSETS.remove(self)
@@ -171,6 +173,7 @@ class StarShipTemplate(Actor):
         self.__health -= points
         if self.__health <= 0:
             self.removefromgame()
+            progvar.ASSETS.append(ExplosionEffect(self.getPos(),self.getRot(),self.getScale()))
             return True
         return False
 
@@ -403,18 +406,43 @@ class healthBar(Actor):
 
                self.__sprite.changeImage(self.__image)
 
-class explosioneffect(Actor):
-    def __init__(self):
-        explosionparticles = []
+class ExplosionEffect(Actor):
+    def __init__(self,position : glm.mat4, rotation : glm.mat4, scale : glm.mat4, lifetime : float =30):
+        self.__explosionparticles = []
+        self.__explosiondirs = []
+        self.__starttime = pygame.time.get_ticks()
+        self.__lifetime = lifetime
 
-        explosionparticle = props.Model("levelobjects/Starship.obj",
-                               "levelobjects/texturedata/StarshipColourMapBlue.png",
-                               "levelobjects/texturedata/StarshipRoughnessGlowmap.png")
-        explosionparticle.resize(glm.scale((.5,.5,.5)))
+        explosionparticle = props.Spark()
+        explosionparticle.setpos(position)
 
-        for i in range(50):
+        for i in range(20):
             thisparticle = copy.deepcopy(explosionparticle)
-            thisparticle.translate(glm.translate((random.uniform(),random.uniform(),random.uniform())))
-            explosionparticles.append(explosionparticles)
+            self.__explosiondirs.append(glm.translate((random.random()*5,random.random()*5,random.random()*5)))
+            self.__explosionparticles.append(thisparticle)
 
-        Actor.__init__(self,explosionparticle)
+        self.__shockwave = props.Model("levelobjects/TexturePlane.obj",
+                                    "levelobjects/texturedata/ShockWaveTexture.png",
+                                    "levelobjects/texturedata/ShockWaveGlowMap.png")
+        self.__shockwave.setScale(glm.scale((2,2,2))*scale)
+        self.__shockwave.setrot(rotation)
+        self.__shockwave.setpos(position)
+
+        Actor.__init__(self,self.__explosionparticles+[self.__shockwave])
+        self.setpos(position)
+
+    def update(self):
+        Actor.update(self)
+
+        timesincebegin = (pygame.time.get_ticks()-self.__starttime)/60
+
+        for i in range(len(self.__explosionparticles)):
+            self.__explosionparticles[i].translate(self.__explosiondirs[i])
+        self.__shockwave.resize(glm.scale((1.05,1.05,1.05)))
+        self.__shockwave.setopacity(1-(timesincebegin/self.__lifetime))
+
+        if timesincebegin > self.__lifetime:
+            self.removefromgame()
+
+    def getShockwaveScale(self) -> float:
+        return glm.length(self.__shockwave.getScale()*glm.vec4(1,1,1,0))/3

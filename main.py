@@ -113,6 +113,7 @@ class Program:
         greyscaleamtlastframe = 0
         clock = pygame.time.Clock()
         userhasquit = False
+        explosionshakeamt = 0
 
         #Loop
         while not userhasquit:
@@ -229,6 +230,14 @@ class Program:
             for asset in progvar.ASSETS:
                 if issubclass(type(asset),actors.Actor):
                     asset.update()
+
+                if isinstance(asset,actors.ExplosionEffect):
+                    if glm.distance(player.getPos()*glm.vec4(0,0,0,1),asset.getPos()*glm.vec4(0,0,0,1)):
+                        explosionshakeamt += (asset.getShockwaveScale()/glm.distance(player.getPos()*glm.vec4(0,0,0,1),asset.getPos()*glm.vec4(0,0,0,1)))*.001
+            explosionshakeamt -= .002 if explosionshakeamt > .002 else -explosionshakeamt
+            explosionshakeamt = explosionshakeamt if explosionshakeamt < 0.1 else 0.1
+
+            progvar.CAMERA.setPostProssShake(explosionshakeamt)
 
             #This function loops through all of the objects in the progvar.ASSETS list and draws them with their drawObj() function
             pygame.display.flip()
