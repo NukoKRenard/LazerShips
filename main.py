@@ -21,7 +21,7 @@ class Program:
 
         #Display
         #Creates the pygame window.
-        screen = pygame.display.set_mode((1080,720), pygame.OPENGL | pygame.DOUBLEBUF)
+        screen = pygame.display.set_mode((1920,1080), pygame.OPENGL | pygame.DOUBLEBUF)
 
 
         cameraoffset = glm.translate((0,5,-20))
@@ -74,7 +74,6 @@ class Program:
         for ship in progvar.SHIPS:
             mp = progvar.MAPSIZE//2
             ship.setpos(glm.translate(glm.vec3(random.randint(-mp, mp), random.randint(-mp, mp), random.randint(-mp, mp))))
-
         #Adds the player:
         player = avaxTeam.getRandomMember()
         playeroutofboundstext = props.ScreenSpaceLabel("Placeholdertext",size=100)
@@ -237,7 +236,7 @@ class Program:
             explosionshakeamt -= .002 if explosionshakeamt > .002 else -explosionshakeamt
             explosionshakeamt = explosionshakeamt if explosionshakeamt < 0.1 else 0.1
 
-            progvar.CAMERA.setPostProssShake(explosionshakeamt)
+            progvar.CAMERA.setPostProssShake(explosionshakeamt*.1)
 
             #This function loops through all of the objects in the progvar.ASSETS list and draws them with their drawObj() function
             pygame.display.flip()

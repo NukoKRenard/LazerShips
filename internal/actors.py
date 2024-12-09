@@ -63,7 +63,7 @@ class Actor:
     def getScale(self) -> glm.mat4:
         return self.__scale
 
-    def update(self) -> None:
+    def update(self,parentMatrix : glm.mat4 = glm.mat4(1)) -> None:
         for costume in self.__costumes:
             if issubclass(type(costume),Actor):
                 costume.update()
@@ -99,8 +99,8 @@ class StarShipTemplate(Actor):
         self.__ry = 0
         self.__rr = 0
 
-    def update(self) -> None:
-        Actor.update(self)
+    def update(self, parentMatrix : glm.mat4 = glm.mat4(1)) -> None:
+        Actor.update(self, parentMatrix)
 
         self.__dx -= self.__dx / 100
         self.__dy -= self.__dy / 100
@@ -227,8 +227,8 @@ class AIShip(StarShipTemplate):
         self.__lazer = props.Lazer((self.getPos()*glm.vec4(0,0,0,1)).xyz,(self.getPos()*glm.vec4(0,0,0,1)).xyz,self.__team.getTeamColor())
         progvar.ASSETS.append(self.__lazer)
 
-    def update(self) -> None:
-        StarShipTemplate.update(self)
+    def update(self, parentMatrix : glm.mat4 = glm.mat4(1)) -> None:
+        StarShipTemplate.update(self, parentMatrix)
         if not self.__firing:
             self.__lazer.setnotvisible()
         else:
@@ -388,8 +388,8 @@ class healthBar(Actor):
 
    def changeColor(self, color : tuple[int,int,int]) -> None:
        self.__color = color
-   def update(self):
-       Actor.update(self)
+   def update(self, parentMatrix : glm.mat4 = glm.mat4(1)):
+       Actor.update(self,parentMatrix)
 
        if self.__target:
            health = self.__target.getHealth()
@@ -431,14 +431,14 @@ class ExplosionEffect(Actor):
         Actor.__init__(self,self.__explosionparticles+[self.__shockwave])
         self.setpos(position)
 
-    def update(self):
-        Actor.update(self)
+    def update(self, parentMatrix : glm.mat4 = glm.mat4(1)):
+        Actor.update(self, parentMatrix)
 
         timesincebegin = (pygame.time.get_ticks()-self.__starttime)/60
 
         for i in range(len(self.__explosionparticles)):
             self.__explosionparticles[i].translate(self.__explosiondirs[i])
-        self.__shockwave.resize(glm.scale((1.05,1.05,1.05)))
+        self.__shockwave.resize(glm.scale((1.1,1.1,1.1)))
         self.__shockwave.setopacity(1-(timesincebegin/self.__lifetime))
 
         if timesincebegin > self.__lifetime:
@@ -446,3 +446,14 @@ class ExplosionEffect(Actor):
 
     def getShockwaveScale(self) -> float:
         return glm.length(self.__shockwave.getScale()*glm.vec4(1,1,1,0))/3
+
+class sfx3D(Actor):
+    def __init__(self,pathtosoundfile : str,position : glm.mat4):
+        self.__sfx = pygame.mixer.Sound(pathtosoundfile);
+        self.__position = position
+
+    def update(self, parentMatrix : glm.mat4 = glm.mat4(1)):
+        Actor.update(self,parentMatrix*self.__position)
+
+        playerdist = distance((parentMatrix*self.__position*glm.vec4(0,0,0,1)).xyz,(self.CAMERA.getPos()*glm.vec4(0,0,0,1)).xyz)
+        self.__sfx.set_volume(1/playerdist)
