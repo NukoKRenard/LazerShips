@@ -244,7 +244,7 @@ class AIShip(StarShipTemplate):
             selfdir = self.getRot() * glm.vec4(0, 0, 1, 1)
             self.__enemyDot = glm.dot(targetdir.xyz, selfdir.xyz)
 
-            self.__hasLock = self.__enemyDot > progvar.SHIPLOCKMAXDOT and glm.length(targetpos - (self.getPos() * glm.vec4(0, 0, 0, 1))) < 300
+            self.__hasLock = self.__enemyDot > progvar.SHIPLOCKMAXDOT and glm.length(targetpos - (self.getPos() * glm.vec4(0, 0, 0, 1))) < progvar.WEAPONRANGE
 
             if self.__AI:
                 localtargetdir = glm.inverse(self.getRot())*targetdir
@@ -269,7 +269,8 @@ class AIShip(StarShipTemplate):
                         if glm.length(shipvec) < 10:
                             self.damage(1)
                             ship.damage(1)
-                        colissiondetected = glm.length(shipvec) < (50*speeddif)-(10*self.__recklessness)
+
+                        colissiondetected = glm.length(shipvec) < (100*speeddif)-(10*self.__recklessness)
                         if colissiondetected and closestshipdistance == -1:
                             closestshipdistance = glm.length(shipvec)
                             targetdir = shipvec/(glm.length(shipvec))
@@ -292,7 +293,7 @@ class AIShip(StarShipTemplate):
                     self.yaw(localtargetdir.x-self.getYawVelocity())
                     self.pitch(-localtargetdir.y-self.getPitchVelocity())
                     self.roll(-localtargetup.x-self.getRollVelocity())
-                    self.throttleSpeed(closestshipdistance/(40-(10*self.__recklessness)))
+                    self.throttleSpeed(.7)
 
                 if self.__hasLock:
                     self.fire()
@@ -335,9 +336,9 @@ class AIShip(StarShipTemplate):
             selfdir = self.getRot()*glm.vec4(0,0,1,1)
             self.__lazer.setpos(start=(self.getPos() * glm.vec4(0, 0, 0, 1)).xyz)
 
-            if glm.dot(targetdir.xyz,selfdir.xyz) > progvar.SHIPLOCKMAXDOT and glm.length(targetpos - (self.getPos() * glm.vec4(0, 0, 0, 1))) < 300:
+            if glm.dot(targetdir.xyz,selfdir.xyz) > progvar.SHIPLOCKMAXDOT and glm.length(targetpos - (self.getPos() * glm.vec4(0, 0, 0, 1))) < progvar.WEAPONRANGE:
                 self.__lazer.setpos(end=(self.__target.getPos() * glm.vec4(0, 0, 0, 1)).xyz)
-                if self.__target.damage(.001*progvar.DELTATIME,self):
+                if self.__target.damage(.0001*(10 if not self.__AI else 1)*progvar.DELTATIME,self):
                         self.__target = None
             else:
                 self.__lazer.setpos(end=((self.getPos()*glm.vec4(0,0,0,1))+(self.getRot()*glm.vec4(0,0,100,0))).xyz)
@@ -424,7 +425,7 @@ class ExplosionEffect(Actor):
         self.__shockwave = props.Model("levelobjects/TexturePlane.obj",
                                     "levelobjects/texturedata/ShockWaveTexture.png",
                                     "levelobjects/texturedata/ShockWaveGlowMap.png")
-        self.__shockwave.setScale(glm.scale((2,2,2))*scale)
+        self.__shockwave.setScale(glm.scale((1,1,1))*scale)
         self.__shockwave.setrot(rotation)
         self.__shockwave.setpos(position)
 
@@ -438,8 +439,8 @@ class ExplosionEffect(Actor):
 
         for i in range(len(self.__explosionparticles)):
             self.__explosionparticles[i].translate(self.__explosiondirs[i])
-        self.__shockwave.resize(glm.scale((1.1,1.1,1.1)))
-        self.__shockwave.setopacity(1-(timesincebegin/self.__lifetime))
+        self.__shockwave.resize(glm.scale((1.2,1.2,1.2)))
+        self.__shockwave.setopacity(.5-(timesincebegin/self.__lifetime)*.5)
 
         if timesincebegin > self.__lifetime:
             self.removefromgame()

@@ -21,7 +21,7 @@ class Program:
 
         #Display
         #Creates the pygame window.
-        screen = pygame.display.set_mode((1920,1080), pygame.OPENGL | pygame.DOUBLEBUF)
+        screen = pygame.display.set_mode((0,0), pygame.OPENGL | pygame.DOUBLEBUF | pygame.FULLSCREEN)
 
 
         cameraoffset = glm.translate((0,5,-20))
@@ -134,9 +134,9 @@ class Program:
                     userhasquit = True
                     break
                 elif event.type == pygame.KEYDOWN and player:
-                    if event.key == pygame.K_EQUALS:
+                    if event.key == pygame.K_x:
                         player.switchtarget(1)
-                    elif event.key == pygame.K_MINUS:
+                    elif event.key == pygame.K_z:
                         player.switchtarget(-1)
                 if event.type == pygame.MOUSEWHEEL:
                     playerthrottle += event.y*(1/60)
