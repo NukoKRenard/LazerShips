@@ -14,6 +14,8 @@ import random
 import internal.props as props
 import internal.datatypes as datatypes
 
+from math import *
+
 
 
 #This is a template for an actor type. Sets some default values.
@@ -66,21 +68,26 @@ class Actor:
     def update(self,parentMatrix : glm.mat4 = glm.mat4(1)) -> None:
         for costume in self.__costumes:
             if issubclass(type(costume),Actor):
-                costume.update()
+                costume.update(parentMatrix)
 
     def removefromgame(self) -> None:
         if self in progvar.ASSETS:
             progvar.ASSETS.remove(self)
-    def getCostumes(self):
+    def getCostumes(self) -> list:
         return self.__costumes
+    def addCostume(self, costume) -> None:
+        if isinstance(costume,props.Prop) or isinstance(costume,Actor):
+            self.__costumes.append(costume)
+        else:
+            raise Exception(f"Invalid costume appended to actor: {self}")
 
 #This is a template for a starship type. Has some basic movement functions
 class StarShipTemplate(Actor):
     def __init__(self,
                  starshipCostumes,
                  minSpeed : float =0 ,
-                 maxSpeed : float =5 ,
-                 maxrotatespeed : float= 1/10,
+                 maxSpeed : float =1 ,
+                 maxrotatespeed : float= 1/9,
                  maxhealth : float =1
     ):
         Actor.__init__(self, starshipCostumes)
@@ -90,6 +97,7 @@ class StarShipTemplate(Actor):
         self.__maxspeed = maxSpeed
         self.__minspeed = minSpeed
         self.__maxrotatespeedc = maxrotatespeed
+        self.__tcaspulldir = glm.normalize(glm.vec3(random.random(),random.random(),random.random()))
 
         self.__dx = 0
         self.__dy = 0
@@ -152,8 +160,8 @@ class StarShipTemplate(Actor):
         self.__dz += (speed / 100)*progvar.DELTATIME
         if self.__dz > self.__maxspeed:
             self.__dz = self.__maxspeed
-        elif self.__dz < -self.__minspeed:
-            self.__dz = -self.__minspeed
+        elif self.__dz < self.__minspeed:
+            self.__dz = self.__minspeed
     def strafe(self,speed : float) -> None:
         self.__dx += (speed / 100)*progvar.DELTATIME
         if self.__dx > self.__maxspeed/2:
@@ -288,12 +296,12 @@ class AIShip(StarShipTemplate):
                     self.yaw(localtargetdir.x-self.getYawVelocity()-random.uniform(-.3,.3))
                     self.pitch(-localtargetdir.y-self.getPitchVelocity()-random.uniform(-.3,.3))
                     self.roll(-localtargetup.x-self.getRollVelocity()-random.uniform(-.3,.3))
-                    self.throttleSpeed(1)
+                    self.throttleSpeed(10)
                 else:
                     self.yaw(localtargetdir.x-self.getYawVelocity())
                     self.pitch(-localtargetdir.y-self.getPitchVelocity())
                     self.roll(-localtargetup.x-self.getRollVelocity())
-                    self.throttleSpeed(.7)
+                    self.throttleSpeed(10)
 
                 if self.__hasLock:
                     self.fire()
@@ -338,7 +346,7 @@ class AIShip(StarShipTemplate):
 
             if glm.dot(targetdir.xyz,selfdir.xyz) > progvar.SHIPLOCKMAXDOT and glm.length(targetpos - (self.getPos() * glm.vec4(0, 0, 0, 1))) < progvar.WEAPONRANGE:
                 self.__lazer.setpos(end=(self.__target.getPos() * glm.vec4(0, 0, 0, 1)).xyz)
-                if self.__target.damage(.0001*(10 if not self.__AI else 1)*progvar.DELTATIME,self):
+                if self.__target.damage(.001*progvar.DELTATIME,self):
                         self.__target = None
             else:
                 self.__lazer.setpos(end=((self.getPos()*glm.vec4(0,0,0,1))+(self.getRot()*glm.vec4(0,0,100,0))).xyz)
@@ -409,18 +417,9 @@ class healthBar(Actor):
 
 class ExplosionEffect(Actor):
     def __init__(self,position : glm.mat4, rotation : glm.mat4, scale : glm.mat4, lifetime : float =30):
-        self.__explosionparticles = []
-        self.__explosiondirs = []
+        Actor.__init__(self, [])
         self.__starttime = pygame.time.get_ticks()
         self.__lifetime = lifetime
-
-        explosionparticle = props.Spark()
-        explosionparticle.setpos(position)
-
-        for i in range(20):
-            thisparticle = copy.deepcopy(explosionparticle)
-            self.__explosiondirs.append(glm.translate((random.random()*5,random.random()*5,random.random()*5)))
-            self.__explosionparticles.append(thisparticle)
 
         self.__shockwave = props.Model("levelobjects/TexturePlane.obj",
                                     "levelobjects/texturedata/ShockWaveTexture.png",
@@ -428,19 +427,21 @@ class ExplosionEffect(Actor):
         self.__shockwave.setScale(glm.scale((1,1,1))*scale)
         self.__shockwave.setrot(rotation)
         self.__shockwave.setpos(position)
+        self.addCostume(self.__shockwave)
 
-        Actor.__init__(self,self.__explosionparticles+[self.__shockwave])
+        self.__sound = sfx3D(progvar.EXPLOSIONSFX)
+        self.addCostume(self.__sound)
+
         self.setpos(position)
+        self.__sound.play()
 
     def update(self, parentMatrix : glm.mat4 = glm.mat4(1)):
-        Actor.update(self, parentMatrix)
+        Actor.update(self, parentMatrix*self.getPos())
 
         timesincebegin = (pygame.time.get_ticks()-self.__starttime)/60
 
-        for i in range(len(self.__explosionparticles)):
-            self.__explosionparticles[i].translate(self.__explosiondirs[i])
-        self.__shockwave.resize(glm.scale((1.2,1.2,1.2)))
-        self.__shockwave.setopacity(.5-(timesincebegin/self.__lifetime)*.5)
+        self.__shockwave.resize(glm.scale((1.2, 1.2, 1.2)))
+        self.__shockwave.setopacity(.5 - (timesincebegin / self.__lifetime) * .5)
 
         if timesincebegin > self.__lifetime:
             self.removefromgame()
@@ -449,12 +450,19 @@ class ExplosionEffect(Actor):
         return glm.length(self.__shockwave.getScale()*glm.vec4(1,1,1,0))/3
 
 class sfx3D(Actor):
-    def __init__(self,pathtosoundfile : str,position : glm.mat4):
-        self.__sfx = pygame.mixer.Sound(pathtosoundfile);
-        self.__position = position
+    def __init__(self,sound : pygame.mixer.Sound):
+        self.__sfx = sound;
+
+        Actor.__init__(self,[])
 
     def update(self, parentMatrix : glm.mat4 = glm.mat4(1)):
-        Actor.update(self,parentMatrix*self.__position)
+        worldpos = parentMatrix * self.getPos()
+        Actor.update(self,worldpos)
 
-        playerdist = distance((parentMatrix*self.__position*glm.vec4(0,0,0,1)).xyz,(self.CAMERA.getPos()*glm.vec4(0,0,0,1)).xyz)
-        self.__sfx.set_volume(1/playerdist)
+
+        playerdist = glm.distance((worldpos*glm.vec4(0,0,0,1)).xyz,(progvar.CAMERA.getPos()*glm.vec4(0,0,0,1)).xyz)
+        print(playerdist)
+        self.__sfx.set_volume(1/(playerdist) if playerdist != 0 else 1)
+
+    def play(self):
+        self.__sfx.play()

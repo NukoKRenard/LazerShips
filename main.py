@@ -199,7 +199,7 @@ class Program:
                     crosshair.changeImage(crosshairreversed)
 
             for ship in progvar.SHIPS:
-                if ship.getVelocity().z > 5:
+                if ship.getVelocity().z > ship.getMaxSpeed():
                     raise Exception(f"Error: {ship.getName()} is above the max speed.")
 
             avaxcount.changeText(str(len(avaxTeam.getAllMembers())))

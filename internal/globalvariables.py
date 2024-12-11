@@ -2,6 +2,9 @@
 11/14/2024
 This file holds global variables to be used between the different modules.
 """
+import pygame
+pygame.init()
+
 #A list of objects that need to be drawn to the screen.
 global ASSETS
 ASSETS = []
@@ -24,4 +27,7 @@ global SHIPLOCKMAXDOT
 SHIPLOCKMAXDOT = .95
 
 global WEAPONRANGE
-WEAPONRANGE = 1500
+WEAPONRANGE = 700
+
+global EXPLOSIONSFX
+EXPLOSIONSFX = pygame.mixer.Sound("sfx/Explosion.wav")
