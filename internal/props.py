@@ -486,6 +486,88 @@ class Spark(Prop):
         color = (color[0] if color[0] < 256 else 255,color[1] if color[1] < 256 else 255,color[2] if color[2] < 256 else 255)
         self.__color = color
 
+class Board(Prop):
+    def __init__(self,image : pygame.surface.Surface | None):
+        Prop.__init__(self)
+        self.__rect = image.get_rect()
+        self.__image = image
+
+        self.changeImage(image)
+    def drawObj(self, worldMatrix : glm.mat4, perspectiveMatrix : glm.mat4,
+                shaderlist : list[int],
+                vertexbufferlist : list[int],
+                indexbufferlist : list[int],
+                parentMatrix : glm.mat4 = glm.mat4(1)
+                ) -> None:
+
+        objMatrix = parentMatrix * (self.getPos() * self.getRot() * self.getScale())
+
+        imgvertsize = glm.vec2(self.__rect.size)/glm.vec2(progvar.CAMERA.getScreenDimensions())/2
+
+        vertexdata = (
+            -imgvertsize.x,-imgvertsize.y,0.0,0.0,0.0,
+            -imgvertsize.x, imgvertsize.y,0.0,0.0,1.0,
+             imgvertsize.x, imgvertsize.y,0.0,1.0,1.0,
+             imgvertsize.x,-imgvertsize.y,0.0,1.0,0.0
+        )
+
+        indexdata = (
+            0, 1 ,2,
+            2, 3, 0
+        )
+
+        self.__vertexdata = numpy.array(vertexdata, dtype=numpy.float32)
+        self.__indexdata = numpy.array(indexdata, dtype=numpy.uint32)
+
+        self.bindTexture()
+
+        # Binds the shaderprogram and buffers. (Tells OpenGL that these are the shaders/buffers that we want to use to draw the ship)
+        glDepthFunc(GL_LESS)
+        glUseProgram(shaderlist[3])
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, self.__indexdata.nbytes, self.__indexdata, GL_DYNAMIC_DRAW)
+        glBufferData(GL_ARRAY_BUFFER, self.__vertexdata.nbytes, self.__vertexdata, GL_DYNAMIC_DRAW)
+
+        # Tells the shaders where certain attributes are in the vertexdata list.
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), c_void_p(0))
+        glEnableVertexAttribArray(0)
+        glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), c_void_p(12))
+        glEnableVertexAttribArray(1)
+        glUniformMatrix4fv(glGetUniformLocation(shaderlist[3], "objectMatrix"), 1, GL_FALSE,
+                           glm.value_ptr(objMatrix))
+        glUniform1i(glGetUniformLocation(shaderlist[3],"image"),0)
+
+        # Draws the prop to the screen.
+        glDrawElements(GL_TRIANGLES, len(self.__indexdata), GL_UNSIGNED_INT, None)
+    def changeImage(self, imagedata : pygame.surface.Surface) -> None:
+        self.__rect = imagedata.get_rect()
+        self.__image = imagedata
+        self.texture = glGenTextures(1)
+        glBindTexture(GL_TEXTURE_2D, self.texture)
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT)
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT)
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
+        imagedata = pygame.transform.flip(imagedata,False,True)
+        image_width, image_height = imagedata.get_rect().size
+        image = pygame.image.tobytes(imagedata, "RGBA")
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, image_width, image_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, image)
+        glGenerateMipmap(GL_TEXTURE_2D)
+
+    def changeRawTexture(self,texture : int,size : tuple[int]):
+        self.texture = texture
+        self.__rect.size = size
+        self.__image = None
+
+        glBindTexture(GL_TEXTURE_2D)
+        glGenerateMipmap(GL_TEXTURE_2D)
+
+    def getImage(self) -> pygame.surface.Surface | None:
+        return self.__image
+
+    def bindTexture(self) -> None:
+        glActiveTexture(GL_TEXTURE0)
+        glBindTexture(GL_TEXTURE_2D,self.texture)
+
 
 class ScreenSpaceSprite(Prop):
     def __init__(self,image : pygame.surface.Surface | None):

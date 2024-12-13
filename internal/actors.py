@@ -292,16 +292,10 @@ class AIShip(StarShipTemplate):
                     localtargetdir = glm.inverse(self.getRot()) * targetdir
                     localtargetdir = glm.vec4(-localtargetdir.x, -localtargetdir.y, -localtargetdir.z, 0)
 
-                if closestshipdistance == -1:
-                    self.yaw(localtargetdir.x-self.getYawVelocity()-random.uniform(-.3,.3))
-                    self.pitch(-localtargetdir.y-self.getPitchVelocity()-random.uniform(-.3,.3))
-                    self.roll(-localtargetup.x-self.getRollVelocity()-random.uniform(-.3,.3))
-                    self.throttleSpeed(10)
-                else:
-                    self.yaw(localtargetdir.x-self.getYawVelocity())
-                    self.pitch(-localtargetdir.y-self.getPitchVelocity())
-                    self.roll(-localtargetup.x-self.getRollVelocity())
-                    self.throttleSpeed(10)
+                self.yaw(localtargetdir.x-self.getYawVelocity()-random.uniform(-.3,.3))
+                self.pitch(-localtargetdir.y-self.getPitchVelocity()-random.uniform(-.3,.3))
+                self.roll(-localtargetup.x-self.getRollVelocity()-random.uniform(-.3,.3))
+                self.throttleSpeed(1)
 
                 if self.__hasLock:
                     self.fire()
@@ -346,7 +340,7 @@ class AIShip(StarShipTemplate):
 
             if glm.dot(targetdir.xyz,selfdir.xyz) > progvar.SHIPLOCKMAXDOT and glm.length(targetpos - (self.getPos() * glm.vec4(0, 0, 0, 1))) < progvar.WEAPONRANGE:
                 self.__lazer.setpos(end=(self.__target.getPos() * glm.vec4(0, 0, 0, 1)).xyz)
-                if self.__target.damage(.001*progvar.DELTATIME,self):
+                if self.__target.damage(.0005 if self.__AI else .001 *progvar.DELTATIME,self):
                         self.__target = None
             else:
                 self.__lazer.setpos(end=((self.getPos()*glm.vec4(0,0,0,1))+(self.getRot()*glm.vec4(0,0,100,0))).xyz)
@@ -461,8 +455,8 @@ class sfx3D(Actor):
 
 
         playerdist = glm.distance((worldpos*glm.vec4(0,0,0,1)).xyz,(progvar.CAMERA.getPos()*glm.vec4(0,0,0,1)).xyz)
-        print(playerdist)
-        self.__sfx.set_volume(1/(playerdist) if playerdist != 0 else 1)
+
+        self.__sfx.set_volume(1/(playerdist/10) if playerdist != 0 else 1)
 
     def play(self):
         self.__sfx.play()
