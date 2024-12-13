@@ -231,6 +231,7 @@ class AIShip(StarShipTemplate):
         self.__enemyDot = 1
         self.__hasLock = False
         self.__name = Name
+        self.__lazerSfx = sfx3D(progvar.LAZERSFX,True)
 
         self.__lazer = props.Lazer((self.getPos()*glm.vec4(0,0,0,1)).xyz,(self.getPos()*glm.vec4(0,0,0,1)).xyz,self.__team.getTeamColor())
         progvar.ASSETS.append(self.__lazer)
@@ -438,14 +439,17 @@ class ExplosionEffect(Actor):
         self.__shockwave.setopacity(.5 - (timesincebegin / self.__lifetime) * .5)
 
         if timesincebegin > self.__lifetime:
-            self.removefromgame()
+            pass#self.removefromgame()
 
     def getShockwaveScale(self) -> float:
         return glm.length(self.__shockwave.getScale()*glm.vec4(1,1,1,0))/3
 
 class sfx3D(Actor):
-    def __init__(self,sound : pygame.mixer.Sound):
-        self.__sfx = sound;
+    def __init__(self,sound : pygame.mixer.Sound, looping : bool = False):
+        self.__sfx = sound
+        self.__looping = looping
+        self.__sfxchannel = None
+        self.__playingnow = False
 
         Actor.__init__(self,[])
 
@@ -457,6 +461,15 @@ class sfx3D(Actor):
         playerdist = glm.distance((worldpos*glm.vec4(0,0,0,1)).xyz,(progvar.CAMERA.getPos()*glm.vec4(0,0,0,1)).xyz)
 
         self.__sfx.set_volume(1/(playerdist/10) if playerdist != 0 else 1)
+        if self.__sfxchannel:
+            if self.__looping and self.__playingnow and not self.__sfxchannel.get_busy():
+                self.__sfxchannel = self.__sfx.play()
+
 
     def play(self):
-        self.__sfx.play()
+        self.__sfxchannel = self.__sfx.play()
+        self.__playingnow = True
+
+    def stop(self):
+        self.__sfx.stop()
+        self.__playingnow = False

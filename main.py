@@ -138,6 +138,10 @@ class Program:
                         player.switchtarget(1)
                     elif event.key == pygame.K_z:
                         player.switchtarget(-1)
+                    elif event.key == pygame.K_d:
+                        for ship in progvar.SHIPS:
+                            if ship != player:
+                                ship.damage(1)
                 if event.type == pygame.MOUSEWHEEL:
                     playerthrottle += event.y*(1/60)
 

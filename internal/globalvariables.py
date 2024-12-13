@@ -31,3 +31,6 @@ WEAPONRANGE = 700
 
 global EXPLOSIONSFX
 EXPLOSIONSFX = pygame.mixer.Sound("sfx/Explosion.wav")
+
+global LAZERSFX
+LAZERSFX = pygame.mixer.Sound("sfx/LazerFiring.wav")
