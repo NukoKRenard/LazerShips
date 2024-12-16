@@ -103,8 +103,6 @@ class Program:
         tx01count.setpos(glm.translate((-.5, .5, -1.0)))
         progvar.ASSETS.append(tx01count)
 
-        #Adds text telling the player to return if they try to leave the map
-        leavemaptimetext = props.ScreenSpaceLabel("Placeholdertext", size=100)
 
         #Action
         #Assign key variables
@@ -143,6 +141,7 @@ class Program:
                             if ship != player:
                                 ship.damage(1)
                 if event.type == pygame.MOUSEWHEEL:
+                    playerthrottle += event.y*(1/60)
                     playerthrottle += event.y*(1/60)
 
             if player:
@@ -215,7 +214,7 @@ class Program:
                     greyscaleamtlastframe = 0
                 greyscaleamtlastframe += progvar.DELTATIME/(60*10)
 
-                playeroutofboundstext.setpos(glm.translate((0,0,0)))
+                playeroutofboundstext.setpos(glm.translate((0,0,-1)))
                 playeroutofboundstext.changeText(f"You are leaving the area, return within {10-int(greyscaleamtlastframe*10)}s")
 
                 #Kills the player if they have been out of bounds for 10 or more seconds.
