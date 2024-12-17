@@ -190,7 +190,7 @@ class Model(Prop):
                 shaderlist : list[int],
                 vertexbuffer: list[int],
                 indexbuffer : list[int],
-                parentMatrix : glm.mat4 =glm.vec4(1)
+                parentMatrix : glm.mat4 =glm.mat4(1)
                 ) -> None:
 
         #Binds the texture to the buffer to be sent to the shader.
@@ -503,7 +503,7 @@ class ScreenSpaceSprite(Prop):
 
         objMatrix = parentMatrix * (self.getPos() * self.getRot() * self.getScale())
 
-        imgvertsize = glm.vec2(self.__rect.size)/glm.vec2(progvar.CAMERA.getScreenDimensions())/2
+        imgvertsize = glm.vec2(self.__rect.size)/glm.vec2(progvar.CAMERA.getScreenDimensions()[1])/2
 
         vertexdata = (
             -imgvertsize.x,-imgvertsize.y,0.0,0.0,0.0,

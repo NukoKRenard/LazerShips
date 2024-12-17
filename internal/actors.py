@@ -86,7 +86,7 @@ class StarShipTemplate(Actor):
     def __init__(self,
                  starshipCostumes,
                  minSpeed : float =0 ,
-                 maxSpeed : float =5 ,
+                 maxSpeed : float =3 ,
                  maxrotatespeed : float= 1/9,
                  maxhealth : float =1
     ):
@@ -97,7 +97,6 @@ class StarShipTemplate(Actor):
         self.__maxspeed = maxSpeed
         self.__minspeed = minSpeed
         self.__maxrotatespeedc = maxrotatespeed
-        self.__tcaspulldir = glm.normalize(glm.vec3(random.random(),random.random(),random.random()))
 
         self.__dx = 0
         self.__dy = 0
@@ -219,13 +218,12 @@ class StarShipTemplate(Actor):
                 ship.switchtarget(1)
 
 class AIShip(StarShipTemplate):
-    def __init__(self,shipmodel,Name : str,team : datatypes.Team, shipsinplay):
+    def __init__(self,shipmodel,Name : str,team : datatypes.Team):
         StarShipTemplate.__init__(self,shipmodel)
         self.__team = team
         self.__target = self.__team.getRandomEnemy()
         self.__recklessness = random.uniform(0,1)
-        self.__allships = shipsinplay
-        self.__timesincelastfire = 0
+        self.__lastfiretime = 0
         self.__AI = True
         self.__firing = False
         self.__enemyDot = 1
@@ -238,75 +236,78 @@ class AIShip(StarShipTemplate):
 
     def update(self, parentMatrix : glm.mat4 = glm.mat4(1)) -> None:
         StarShipTemplate.update(self, parentMatrix)
-        if not self.__firing:
-            self.__lazer.setnotvisible()
-        else:
+
+        if self.__firing:
             self.__lazer.setvisible()
-            self.__firing = False
+        else:
+            self.__lazer.setnotvisible()
+        self.__firing = False
 
-        if not self.__target or self.__target not in self.__team.getAllEnemies():
+        if not self.__target or self.__target not in progvar.SHIPS:
             self.__target = self.__team.getRandomEnemy()
+            self.__timesincelastfire = pygame.time.get_ticks()
 
-        if self.__target:
-            targetpos = (self.__target.getPos() * glm.vec4(0, 0, 0, 1))
-            targetdir = glm.normalize((targetpos - (self.getPos() * glm.vec4(0, 0, 0, 1))).xyz)
-            selfdir = self.getRot() * glm.vec4(0, 0, 1, 1)
-            self.__enemyDot = glm.dot(targetdir.xyz, selfdir.xyz)
+        targetdot = glm.dot(glm.normalize(((glm.inverse(self.getPos())*self.__target.getPos())*glm.vec4(0,0,0,1)).xyz),(self.getRot()*glm.vec4(0,0,1,0)).xyz)
+        targetdist = glm.distance((self.getPos()*glm.vec4(0,0,0,1)).xyz,(self.__target.getPos()*(0,0,0,1)).xyz)
+        if targetdot >= progvar.SHIPLOCKMAXDOT and targetdist < progvar.WEAPONRANGE:
+            self.__hasLock = True
+        else:
+            self.__hasLock = False
 
-            self.__hasLock = self.__enemyDot > progvar.SHIPLOCKMAXDOT and glm.length(targetpos - (self.getPos() * glm.vec4(0, 0, 0, 1))) < progvar.WEAPONRANGE
+        if self.__AI:
+            # Control's the AI's target choices, and replaces it with a new one if necicary.
+            if (self.__lastfiretime - (pygame.time.get_ticks())) / 60 > progvar.AIAMNESIA:
+                self.__target = self.__team.getRandomEnemy()
+                self.__timesincelastfire = pygame.time.get_ticks()
 
-            if self.__AI:
-                localtargetdir = glm.inverse(self.getRot())*targetdir
+            #Decides weither or weither to not fire on the targeted ship
+            if self.isLocked():
+                self.fire()
+                self.__lastfiretime = pygame.time.get_ticks()
 
-                targetup = self.__target.getRot()*glm.vec4(0,1,0,0)
-                localtargetup = glm.inverse(self.getRot())*targetup
+            self.__enemyDot = targetdot
 
-                selfpos = self.getPos() * glm.vec4(0, 0, 0, 1)
+            #Checks for collisions with other ships
+            collidevector = None
+            for ship in progvar.SHIPS:
+                if isinstance(ship,AIShip) and ship.getPos() != self.getPos():
+                    itemdist = glm.distance((ship.getPos()*glm.vec4(0,0,0,1)).xyz,(self.getPos()*glm.vec4(0,0,0,1)).xyz)
+                    if itemdist < 20:
+                        self.damage(self.getMaxHealth())
+                        ship.damage(ship.getMaxHealth())
+                        break
 
-                # This loop detects if any ships are too close (within a radius of 50) to this ship. If so it
-                # stops chasing its target and instead tries to avoid a colission
-                closestshipdistance = -1
-                for ship in self.__allships:
-                    speeddif = (glm.dot(self.getVelocity(),ship.getVelocity())/self.getMaxSpeed())*2
-                    speeddif = speeddif if speeddif > 1 else 1
-                    if ship.getPos() != self.getPos():
-                        shippos = ship.getPos() * glm.vec4(0, 0, 0, 1)
-                        shipvec = shippos-selfpos
-                        if glm.length(shipvec) < 10:
-                            self.damage(1)
-                            ship.damage(1)
+                    elif itemdist < (50*self.getVelocity().z if self.getVelocity().z > 1 else 1)-self.__recklessness*10:
+                        itempos = glm.normalize(glm.inverse(glm.inverse(self.getPos())*ship.getPos())*glm.vec4(0,0,0,1)).xyz
 
-                        colissiondetected = glm.length(shipvec) < (100*speeddif)-(10*self.__recklessness)
-                        if colissiondetected and closestshipdistance == -1:
-                            closestshipdistance = glm.length(shipvec)
-                            targetdir = shipvec/(glm.length(shipvec))
-                        elif colissiondetected and closestshipdistance != -1:
-                            targetdir += shipvec/(glm.length(shipvec))
-                            if glm.length(shipvec) > closestshipdistance:
-                                closestshipdistance = glm.length(shipvec)
+                        if collidevector:
+                            collidevector += itempos
+                        else:
+                            collidevector = itempos
 
-                if closestshipdistance != -1:
-                    targetdir = glm.normalize(targetdir)
-                    localtargetdir = glm.inverse(self.getRot()) * targetdir
-                    localtargetdir = glm.vec4(-localtargetdir.x, -localtargetdir.y, -localtargetdir.z, 0)
-                elif glm.length(selfpos) > progvar.MAPSIZE:
-                    targetdir = glm.normalize(-selfpos)
-                    localtargetdir = glm.inverse(self.getRot())*targetdir
-                if self.__hasLock:
-                    self.fire()
-                    self.__timesincelastfire = 0
-                else:
-                    self.__timesincelastfire += pygame.time.get_ticks()*progvar.DELTATIME
-                    self.__lazer.setnotvisible()
+            #Movement heiarchy
+            # If you are nearly out of the map boundary return back to the map
+            # Otherwise if there is a colission imminent avoid it.
+            # Otherwise chase your target.
+            if glm.length((self.getPos()*glm.vec4(0,0,0,1)).xyz) > progvar.MAPSIZE-100:
+                self.goToPos(glm.vec3(0,0,0))
+            elif collidevector:
+                self.goToPos((self.getPos()*glm.vec4(collidevector,1)).xyz)
+            else:
+                self.goToPos((self.__target.getPos()*glm.vec4(0,0,0,1)).xyz)
 
-                if self.__timesincelastfire*60 > 20:
-                    self.__target = self.__team.getRandomEnemy()
-                    self.__timesincelastfire = 0
+    def goToPos(self, pos):
+        relativepos = glm.vec4((glm.inverse(self.getPos())*glm.vec4(pos,1)).xyz,0)
+        localdir = glm.normalize(glm.inverse(self.getRot())*relativepos)
+        thrustvec = glm.normalize(localdir.xy + glm.vec2(random.random(),random.random())*progvar.AITARGETINGINNACURACY)
 
-                self.yaw(localtargetdir.x - self.getYawVelocity() - random.uniform(-.3, .3))
-                self.pitch(-localtargetdir.y - self.getPitchVelocity() - random.uniform(-.3, .3))
-                self.roll(-localtargetup.x - self.getRollVelocity() - random.uniform(-.3, .3))
-                self.throttleSpeed(1)
+        self.pitch(-thrustvec.y-self.getPitchVelocity())
+        self.yaw(thrustvec.x+self.getYawVelocity())
+        self.roll(thrustvec.x+self.getRollVelocity())
+
+        self.throttleSpeed(1)
+
+
 
     def switchtarget(self, number : int) -> bool:
         if self.__target != None:
@@ -334,11 +335,9 @@ class AIShip(StarShipTemplate):
         if self.__target:
 
             targetpos = (self.__target.getPos()*glm.vec4(0,0,0,1))
-            targetdir = glm.normalize(targetpos-(self.getPos()*glm.vec4(0,0,0,1)))
-            selfdir = self.getRot()*glm.vec4(0,0,1,1)
             self.__lazer.setpos(start=(self.getPos() * glm.vec4(0, 0, 0, 1)).xyz)
 
-            if glm.dot(targetdir.xyz,selfdir.xyz) > progvar.SHIPLOCKMAXDOT and glm.length(targetpos - (self.getPos() * glm.vec4(0, 0, 0, 1))) < progvar.WEAPONRANGE:
+            if self.isLocked():
                 self.__lazer.setpos(end=(self.__target.getPos() * glm.vec4(0, 0, 0, 1)).xyz)
                 if self.__target.damage(.0005 if self.__AI else .001 *progvar.DELTATIME,self):
                         self.__target = None
@@ -438,7 +437,7 @@ class ExplosionEffect(Actor):
         self.__shockwave.setopacity(.5 - (timesincebegin / self.__lifetime) * .5)
 
         if timesincebegin > self.__lifetime:
-            pass#self.removefromgame()
+            self.removefromgame()
 
     def getShockwaveScale(self) -> float:
         return glm.length(self.__shockwave.getScale()*glm.vec4(1,1,1,0))/3
@@ -463,6 +462,7 @@ class sfx3D(Actor):
         if self.__sfxchannel:
             if self.__looping and self.__playingnow and not self.__sfxchannel.get_busy():
                 self.__sfxchannel = self.__sfx.play()
+
 
 
     def play(self):

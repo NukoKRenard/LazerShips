@@ -57,13 +57,14 @@ class Program:
 
         #Adds a number of ships for each team
         for i in range(20):
-            ship = actors.AIShip([copy.deepcopy(blueteam_ship)],str(i)+"avax",avaxTeam,progvar.SHIPS)
+            ship = actors.AIShip([copy.deepcopy(blueteam_ship)],str(i)+"avax",avaxTeam)
             avaxTeam.addToTeam(ship)
             progvar.ASSETS.append(ship)
         for i in range(20):
-            ship = actors.AIShip([copy.deepcopy(redteam_ship)],str(i)+"tx01",tx01Team,progvar.SHIPS)
+            ship = actors.AIShip([copy.deepcopy(redteam_ship)],str(i)+"tx01",tx01Team)
             tx01Team.addToTeam(ship)
             progvar.ASSETS.append(ship)
+
 
         # This checks all of the assets in the progvar.ASSETS list, and if it is a ship type it adds them to the progvar.SHIPS list
         for asset in progvar.ASSETS:

@@ -76,7 +76,7 @@ class Camera(Actor):
         glClearColor(1.0, 0.0, 1.0, 1)
 
         #Loads all of the shaders using the helper function.
-        self.starshipShader = loadShaderProgram("shaders/starshipVertex.glsl","shaders/starshipFragment.glsl")
+        self.starshipShader = loadShaderProgram("shaders/modelVertex.glsl","shaders/modelFragment.glsl")
         self.skyboxShader = loadShaderProgram("shaders/skyboxVertex.glsl", "shaders/skyboxFragment.glsl")
         self.lazerShader = loadShaderProgram("shaders/lazerVertex.glsl", "shaders/lazerFragment.glsl")
         self.spriteShader = loadShaderProgram("shaders/screenSpaceSpriteVertex.glsl", "shaders/screenSpaceSpriteFragment.glsl")
