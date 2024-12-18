@@ -137,10 +137,8 @@ class Program:
                         player.switchtarget(1)
                     elif event.key == pygame.K_z:
                         player.switchtarget(-1)
-                    elif event.key == pygame.K_d:
-                        for ship in progvar.SHIPS:
-                            if ship != player:
-                                ship.damage(1)
+                    elif event.key == pygame.K_c:
+                        player.targetAttacker()
                 if event.type == pygame.MOUSEWHEEL:
                     playerthrottle += event.y*(1/60)
                     playerthrottle += event.y*(1/60)
@@ -187,7 +185,8 @@ class Program:
                 targetloc = progvar.CAMERA.getPerspectiveMatrix() * progvar.CAMERA.getWorldMatrix() * playertarget.getPos() * glm.vec4(0, 0, 0, 1)
                 targetloc = targetloc/targetloc.w
 
-                targetloc.x = targetloc.x if abs(targetloc.x) <=1 else targetloc.x/abs(targetloc.x)
+                targetloc.x = targetloc.x if abs(targetloc.x) <= 1 else targetloc.x/abs(targetloc.x)
+                targetloc.x *= progvar.CAMERA.getAspectRatio()
                 targetloc.y = targetloc.y if abs(targetloc.y) <= 1 else targetloc.y/abs(targetloc.y)
                 crosshair.setpos(glm.translate((targetloc.x,targetloc.y,-1)))
 
@@ -237,6 +236,9 @@ class Program:
                 if isinstance(asset,actors.ExplosionEffect):
                     if glm.distance(player.getPos()*glm.vec4(0,0,0,1),asset.getPos()*glm.vec4(0,0,0,1)):
                         explosionshakeamt += (asset.getShockwaveScale()/glm.distance(player.getPos()*glm.vec4(0,0,0,1),asset.getPos()*glm.vec4(0,0,0,1)))*.001
+
+            progvar.PLAYER = player
+
             explosionshakeamt -= .002 if explosionshakeamt > .002 else -explosionshakeamt
             explosionshakeamt = explosionshakeamt if explosionshakeamt < 0.1 else 0.1
 

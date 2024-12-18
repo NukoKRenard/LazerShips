@@ -16,6 +16,9 @@ ASSETS = []
 global SHIPS
 SHIPS = []
 
+global PLAYER
+PLAYER = None
+
 #The current skybox that displays around the scene.
 global SKYBOX
 SKYBOX = None

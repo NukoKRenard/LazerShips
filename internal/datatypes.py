@@ -67,3 +67,8 @@ class Team:
     #Gets all of the members of the team.
     def getAllMembers(self):
         return self.__ships
+
+    def notifyOfDistress(self,caller):
+        for ship in self.__ships:
+            if random.random() <= 0.15 and ship.getHealth() > (ship.getMaxHealth()/4.0)*3.0:
+                ship.setTarget(caller.getTarget())

@@ -230,6 +230,8 @@ class AIShip(StarShipTemplate):
         self.__hasLock = False
         self.__name = Name
         self.__lazerSfx = sfx3D(progvar.LAZERSFX,True)
+        self.__lastAttacker = None
+        self.__distressUsed = False
 
         self.__lazer = props.Lazer((self.getPos()*glm.vec4(0,0,0,1)).xyz,(self.getPos()*glm.vec4(0,0,0,1)).xyz,self.__team.getTeamColor())
         progvar.ASSETS.append(self.__lazer)
@@ -238,8 +240,10 @@ class AIShip(StarShipTemplate):
         StarShipTemplate.update(self, parentMatrix)
 
         if self.__firing:
+            self.__lazerSfx.play()
             self.__lazer.setvisible()
         else:
+            self.__lazerSfx.stop()
             self.__lazer.setnotvisible()
         self.__firing = False
 
@@ -247,9 +251,9 @@ class AIShip(StarShipTemplate):
             self.__target = self.__team.getRandomEnemy()
             self.__timesincelastfire = pygame.time.get_ticks()
 
-        targetdot = glm.dot(glm.normalize(((glm.inverse(self.getPos())*self.__target.getPos())*glm.vec4(0,0,0,1)).xyz),(self.getRot()*glm.vec4(0,0,1,0)).xyz)
+        self.__enemyDot = glm.dot(glm.normalize(((glm.inverse(self.getPos())*self.__target.getPos())*glm.vec4(0,0,0,1)).xyz),(self.getRot()*glm.vec4(0,0,1,0)).xyz)
         targetdist = glm.distance((self.getPos()*glm.vec4(0,0,0,1)).xyz,(self.__target.getPos()*(0,0,0,1)).xyz)
-        if targetdot >= progvar.SHIPLOCKMAXDOT and targetdist < progvar.WEAPONRANGE:
+        if self.__enemyDot >= progvar.SHIPLOCKMAXDOT and targetdist < progvar.WEAPONRANGE:
             self.__hasLock = True
         else:
             self.__hasLock = False
@@ -265,8 +269,6 @@ class AIShip(StarShipTemplate):
                 self.fire()
                 self.__lastfiretime = pygame.time.get_ticks()
 
-            self.__enemyDot = targetdot
-
             #Checks for collisions with other ships
             collidevector = None
             for ship in progvar.SHIPS:
@@ -277,7 +279,7 @@ class AIShip(StarShipTemplate):
                         ship.damage(ship.getMaxHealth())
                         break
 
-                    elif itemdist < (50*self.getVelocity().z if self.getVelocity().z > 1 else 1)-self.__recklessness*10:
+                    elif itemdist < (100*(self.getVelocity().z+self.__target.getVelocity().z) if self.getVelocity().z > 1 else 1)-self.__recklessness*10:
                         itempos = glm.normalize(glm.inverse(glm.inverse(self.getPos())*ship.getPos())*glm.vec4(0,0,0,1)).xyz
 
                         if collidevector:
@@ -288,9 +290,13 @@ class AIShip(StarShipTemplate):
             #Movement heiarchy
             # If you are nearly out of the map boundary return back to the map
             # Otherwise if there is a colission imminent avoid it.
+            # Otherwise if your target is chasing you do evasive maneuvers
             # Otherwise chase your target.
             if glm.length((self.getPos()*glm.vec4(0,0,0,1)).xyz) > progvar.MAPSIZE-100:
                 self.goToPos(glm.vec3(0,0,0))
+            elif glm.dot((glm.inverse(self.__target.getPos())*self.getPos()*glm.vec4(0,0,0,1)).xyz,(self.__target.getRot()*glm.vec4(0,0,1,0)).xyz) > .9 \
+            and glm.dot((glm.inverse(self.getPos())*self.__target.getPos()*glm.vec4(0,0,0,1)).xyz,(self.getRot()*glm.vec4(0,0,1,0)).xyz) <= 0:
+                self.goToPos((self.getPos()*glm.vec4(random.random(),random.random(),random.random(),1.0)).xyz)
             elif collidevector:
                 self.goToPos((self.getPos()*glm.vec4(collidevector,1)).xyz)
             else:
@@ -327,6 +333,9 @@ class AIShip(StarShipTemplate):
 
         else:
             self.__target = self.__team.getRandomEnemy()
+    def setTarget(self, target) -> None:
+        if target:
+            self.__target = target
     def getTarget(self) -> Actor:
         return self.__target
 
@@ -339,7 +348,7 @@ class AIShip(StarShipTemplate):
 
             if self.isLocked():
                 self.__lazer.setpos(end=(self.__target.getPos() * glm.vec4(0, 0, 0, 1)).xyz)
-                if self.__target.damage(.0005 if self.__AI else .001 *progvar.DELTATIME,self):
+                if self.__target.damage(.001 *progvar.DELTATIME,self):
                         self.__target = None
             else:
                 self.__lazer.setpos(end=((self.getPos()*glm.vec4(0,0,0,1))+(self.getRot()*glm.vec4(0,0,100,0))).xyz)
@@ -348,13 +357,25 @@ class AIShip(StarShipTemplate):
 
 
     def damage(self,points : float ,attacker : Actor | None = None) -> bool:
-        if attacker and self.__AI:
-            self.__target = attacker
+        if attacker:
+            self.__lastAttacker = attacker
+        if self.__AI:
+            self.targetAttacker()
         if StarShipTemplate.damage(self,points,attacker):
             self.__team.removeFromTeam(self)
             self.__lazer.removefromgame()
+
+        if self.getHealth() < self.getMaxHealth()/2.0 and self.__target == progvar.PLAYER and not self.__distressUsed:
+            self.__team.notifyOfDistress(self)
+            self.__distressUsed = True
+
             return True
         return False
+    def targetAttacker(self):
+        if self.__lastAttacker in progvar.SHIPS:
+            self.__target = self.__lastAttacker
+        else:
+            self.__lastAttacker = None
 
     def disableAI(self) -> None:
         self.__AI = False
