@@ -45,4 +45,4 @@ global EXPLOSIONSFX
 EXPLOSIONSFX = pygame.mixer.Sound("sfx/Explosion.wav")
 
 global LAZERSFX
-LAZERSFX = pygame.mixer.Sound("sfx/LazerFiring.wav")
+LAZERSFX = pygame.mixer.Sound("sfx/Explosion.wav")

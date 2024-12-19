@@ -180,7 +180,8 @@ class StarShipTemplate(Actor):
         self.__health -= points
         if self.__health <= 0:
             self.removefromgame()
-            progvar.ASSETS.append(ExplosionEffect(self.getPos(),self.getRot(),self.getScale()))
+            explosion = ExplosionEffect(self.getPos(),self.getRot(),self.getScale())
+            progvar.ASSETS.append(explosion)
             return True
         return False
 
@@ -230,6 +231,7 @@ class AIShip(StarShipTemplate):
         self.__hasLock = False
         self.__name = Name
         self.__lazerSfx = sfx3D(progvar.LAZERSFX,True)
+        self.addCostume(self.__lazerSfx)
         self.__lastAttacker = None
         self.__distressUsed = False
 
@@ -240,11 +242,11 @@ class AIShip(StarShipTemplate):
         StarShipTemplate.update(self, parentMatrix)
 
         if self.__firing:
-            self.__lazerSfx.play()
             self.__lazer.setvisible()
+            self.__lazerSfx.play()
         else:
-            self.__lazerSfx.stop()
             self.__lazer.setnotvisible()
+            self.__lazerSfx.stop()
         self.__firing = False
 
         if not self.__target or self.__target not in progvar.SHIPS:
@@ -348,7 +350,7 @@ class AIShip(StarShipTemplate):
 
             if self.isLocked():
                 self.__lazer.setpos(end=(self.__target.getPos() * glm.vec4(0, 0, 0, 1)).xyz)
-                if self.__target.damage(.001 *progvar.DELTATIME,self):
+                if self.__target.damage(.001*progvar.DELTATIME,self):
                         self.__target = None
             else:
                 self.__lazer.setpos(end=((self.getPos()*glm.vec4(0,0,0,1))+(self.getRot()*glm.vec4(0,0,100,0))).xyz)
@@ -479,16 +481,19 @@ class sfx3D(Actor):
 
         playerdist = glm.distance((worldpos*glm.vec4(0,0,0,1)).xyz,(progvar.CAMERA.getPos()*glm.vec4(0,0,0,1)).xyz)
 
-        self.__sfx.set_volume(1/(playerdist/10) if playerdist != 0 else 1)
+        self.__sfx.set_volume(1/(playerdist/100) if playerdist != 0 else 1)
         if self.__sfxchannel:
             if self.__looping and self.__playingnow and not self.__sfxchannel.get_busy():
                 self.__sfxchannel = self.__sfx.play()
+            elif not self.__sfxchannel.get_busy():
+                self.__playingnow = False
 
 
 
     def play(self):
-        self.__sfxchannel = self.__sfx.play()
-        self.__playingnow = True
+        if not self.__playingnow:
+            self.__sfxchannel = self.__sfx.play()
+            self.__playingnow = True
 
     def stop(self):
         self.__sfx.stop()
