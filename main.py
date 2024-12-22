@@ -49,7 +49,7 @@ class Program:
                                     "levelobjects/texturedata/StarshipColourMapRed.png",
                                     "levelobjects/texturedata/StarshipRoughnessGlowmap.png")
         #Creates a skybox
-        progvar.SKYBOX = props.Skybox("skyboxes/spaceSkybox0")
+        progvar.SKYBOX = props.Skybox("skyboxes/mapskybox")
         progvar.ASSETS.append(progvar.SKYBOX)
 
         #Adds the camera to the assets list (They are treated the same as actors in game code and need to be updated in order to render.)

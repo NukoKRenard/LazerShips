@@ -367,12 +367,11 @@ class AIShip(StarShipTemplate):
         if StarShipTemplate.damage(self,points,attacker):
             self.__team.removeFromTeam(self)
             self.__lazer.removefromgame()
+            return True
 
         if self.getHealth() < self.getMaxHealth()/2.0 and self.__target == progvar.PLAYER and not self.__distressUsed:
             self.__team.notifyOfDistress(self)
             self.__distressUsed = True
-
-            return True
         return False
     def targetAttacker(self):
         if self.__lastAttacker in progvar.SHIPS:
