@@ -69,6 +69,6 @@ class Team:
         return self.__ships
 
     def notifyOfDistress(self,caller):
-        for ship in self.__ships:
-            if random.random() <= 0.15 and ship.getHealth() > (ship.getMaxHealth()/4.0)*3.0:
-                ship.setTarget(caller.getTarget())
+        """for ship in self.__ships:
+            if random.random() <= 0.15 and ship.getHealth() > (ship.getMaxHealth()/4.0)*3.0 and ship.getAI():
+                ship.setTarget(caller.getTarget())"""

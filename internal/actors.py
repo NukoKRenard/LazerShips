@@ -180,8 +180,7 @@ class StarShipTemplate(Actor):
         self.__health -= points
         if self.__health <= 0:
             self.removefromgame()
-            explosion = ExplosionEffect(self.getPos(),self.getRot(),self.getScale())
-            progvar.ASSETS.append(explosion)
+            progvar.ASSETS.append(ExplosionEffect(self.getPos(),self.getRot(),self.getScale()))
             return True
         return False
 
@@ -253,65 +252,65 @@ class AIShip(StarShipTemplate):
             self.__target = self.__team.getRandomEnemy()
             self.__timesincelastfire = pygame.time.get_ticks()
 
-        self.__enemyDot = glm.dot(glm.normalize(((glm.inverse(self.getPos())*self.__target.getPos())*glm.vec4(0,0,0,1)).xyz),(self.getRot()*glm.vec4(0,0,1,0)).xyz)
-        targetdist = glm.distance((self.getPos()*glm.vec4(0,0,0,1)).xyz,(self.__target.getPos()*(0,0,0,1)).xyz)
-        if self.__enemyDot >= progvar.SHIPLOCKMAXDOT and targetdist < progvar.WEAPONRANGE:
-            self.__hasLock = True
-        else:
-            self.__hasLock = False
-
-        if self.__AI:
-            # Control's the AI's target choices, and replaces it with a new one if necicary.
-            if (self.__lastfiretime - (pygame.time.get_ticks())) / 60 > progvar.AIAMNESIA:
-                self.__target = self.__team.getRandomEnemy()
-                self.__timesincelastfire = pygame.time.get_ticks()
-
-            #Decides weither or weither to not fire on the targeted ship
-            if self.isLocked():
-                self.fire()
-                self.__lastfiretime = pygame.time.get_ticks()
-
-            #Checks for collisions with other ships
-            collidevector = None
-            for ship in progvar.SHIPS:
-                if isinstance(ship,AIShip) and ship.getPos() != self.getPos():
-                    itemdist = glm.distance((ship.getPos()*glm.vec4(0,0,0,1)).xyz,(self.getPos()*glm.vec4(0,0,0,1)).xyz)
-                    if itemdist < 20:
-                        self.damage(self.getMaxHealth())
-                        ship.damage(ship.getMaxHealth())
-                        break
-
-                    elif itemdist < (100*(self.getVelocity().z+self.__target.getVelocity().z) if self.getVelocity().z > 1 else 1)-self.__recklessness*10:
-                        itempos = glm.normalize(glm.inverse(glm.inverse(self.getPos())*ship.getPos())*glm.vec4(0,0,0,1)).xyz
-
-                        if collidevector:
-                            collidevector += itempos
-                        else:
-                            collidevector = itempos
-
-            #Movement heiarchy
-            # If you are nearly out of the map boundary return back to the map
-            # Otherwise if there is a colission imminent avoid it.
-            # Otherwise if your target is chasing you do evasive maneuvers
-            # Otherwise chase your target.
-            if glm.length((self.getPos()*glm.vec4(0,0,0,1)).xyz) > progvar.MAPSIZE-100:
-                self.goToPos(glm.vec3(0,0,0))
-            elif glm.dot((glm.inverse(self.__target.getPos())*self.getPos()*glm.vec4(0,0,0,1)).xyz,(self.__target.getRot()*glm.vec4(0,0,1,0)).xyz) > .9 \
-            and glm.dot((glm.inverse(self.getPos())*self.__target.getPos()*glm.vec4(0,0,0,1)).xyz,(self.getRot()*glm.vec4(0,0,1,0)).xyz) <= 0:
-                self.goToPos((self.getPos()*glm.vec4(random.random(),random.random(),random.random(),1.0)).xyz)
-            elif collidevector:
-                self.goToPos((self.getPos()*glm.vec4(collidevector,1)).xyz)
+        if self.__target:
+            self.__enemyDot = glm.dot(glm.normalize(((glm.inverse(self.getPos())*self.__target.getPos())*glm.vec4(0,0,0,1)).xyz),(self.getRot()*glm.vec4(0,0,1,0)).xyz)
+            targetdist = glm.distance((self.getPos()*glm.vec4(0,0,0,1)).xyz,(self.__target.getPos()*(0,0,0,1)).xyz)
+            if self.__enemyDot >= progvar.SHIPLOCKMAXDOT and targetdist < progvar.WEAPONRANGE:
+                self.__hasLock = True
             else:
-                self.goToPos((self.__target.getPos()*glm.vec4(0,0,0,1)).xyz)
+                self.__hasLock = False
+
+            if self.__AI and self.__target:
+                # Control's the AI's target choices, and replaces it with a new one if needed.
+                if (self.__lastfiretime - (pygame.time.get_ticks())) / 60 > progvar.AIAMNESIA:
+                    self.__target = self.__team.getRandomEnemy()
+                    self.__timesincelastfire = pygame.time.get_ticks()
+
+                #Decides weither or weither to not fire on the targeted ship
+                if self.isLocked():
+                    self.fire()
+                    self.__lastfiretime = pygame.time.get_ticks()
+
+                #Checks for collisions with other ships
+                collidevector = None
+                for ship in progvar.SHIPS:
+                    if isinstance(ship,AIShip) and ship.getPos() != self.getPos():
+                        itemdist = glm.distance((ship.getPos()*glm.vec4(0,0,0,1)).xyz,(self.getPos()*glm.vec4(0,0,0,1)).xyz)
+                        if itemdist < 20:
+                            self.damage(self.getMaxHealth())
+                            ship.damage(ship.getMaxHealth())
+                            break
+
+                        elif itemdist < (100*((self.getVelocity().z+ship.getVelocity().z)*.5 if self.getVelocity().z > 1 else 1))-self.__recklessness*20:
+                            itempos = glm.normalize(glm.inverse(glm.inverse(self.getPos())*ship.getPos())*glm.vec4(0,0,0,1)).xyz
+
+                            if collidevector:
+                                collidevector += itempos
+                            else:
+                                collidevector = itempos
+
+                #Movement heiarchy
+                # If you are nearly out of the map boundary return back to the map
+                # Otherwise if there is a colission imminent avoid it.
+                # Otherwise if your target is chasing you do evasive maneuvers
+                # Otherwise chase your target.
+                if glm.length((self.getPos()*glm.vec4(0,0,0,1)).xyz) > progvar.MAPSIZE-100 or not self.__target:
+                    self.goToPos(glm.vec3(0,0,0))
+                #elif glm.dot((glm.inverse(self.__target.getPos())*self.getPos()*glm.vec4(0,0,0,1)).xyz,(self.__target.getRot()*glm.vec4(0,0,1,0)).xyz) > .9 and glm.dot((glm.inverse(self.getPos())*self.__target.getPos()*glm.vec4(0,0,0,1)).xyz,(self.getRot()*glm.vec4(0,0,1,0)).xyz) <= 0:
+                #    self.goToPos((self.getPos()*glm.vec4(random.random(),random.random(),random.random(),1.0)).xyz)
+                elif collidevector:
+                    self.goToPos((self.getPos()*glm.vec4(collidevector,1)).xyz)
+                elif self.__target:
+                    self.goToPos((self.__target.getPos()*glm.vec4(0,0,0,1)).xyz)
 
     def goToPos(self, pos):
         relativepos = glm.vec4((glm.inverse(self.getPos())*glm.vec4(pos,1)).xyz,0)
         localdir = glm.normalize(glm.inverse(self.getRot())*relativepos)
-        thrustvec = glm.normalize(localdir.xy + glm.vec2(random.random(),random.random())*progvar.AITARGETINGINNACURACY)
+        thrustvec = glm.normalize(localdir.xy + (-.5+glm.vec2(random.random(),random.random()))*2*(progvar.AITARGETINGINNACURACY))
 
-        self.pitch(-thrustvec.y-self.getPitchVelocity())
-        self.yaw(thrustvec.x+self.getYawVelocity())
-        self.roll(thrustvec.x+self.getRollVelocity())
+        self.pitch(-thrustvec.y+self.getPitchVelocity())
+        self.yaw(thrustvec.x-self.getYawVelocity())
+        self.roll(thrustvec.x-self.getRollVelocity())
 
         self.throttleSpeed(1)
 
@@ -351,7 +350,9 @@ class AIShip(StarShipTemplate):
             if self.isLocked():
                 self.__lazer.setpos(end=(self.__target.getPos() * glm.vec4(0, 0, 0, 1)).xyz)
                 if self.__target.damage(.001*progvar.DELTATIME,self):
-                        self.__target = None
+                    self.__target = self.__team.getRandomEnemy()
+                    self.heal(self.getMaxHealth()/2)
+
             else:
                 self.__lazer.setpos(end=((self.getPos()*glm.vec4(0,0,0,1))+(self.getRot()*glm.vec4(0,0,100,0))).xyz)
         else:
@@ -389,6 +390,8 @@ class AIShip(StarShipTemplate):
         return self.__enemyDot
     def getName(self) -> str:
         return self.__name
+    def getAI(self):
+        return self.__AI
 
 class healthBar(Actor):
    def __init__(self, color : tuple[int,int,int] = (0,200,200), ship : AIShip = None):
@@ -487,8 +490,6 @@ class sfx3D(Actor):
                 self.__sfxchannel = self.__sfx.play()
             elif not self.__sfxchannel.get_busy():
                 self.__playingnow = False
-
-
 
     def play(self):
         if not self.__playingnow:
