@@ -44,7 +44,8 @@ class Program:
             mp = progvar.MAPSIZE // 2
             asteroid = actors.Asteroid()
 
-            asteroid.setScale(glm.scale(glm.vec3(random.random(),random.random(),random.random())*50))
+            scale = (.2+glm.vec3(random.random(),random.random(),random.random())*.8)*30
+            asteroid.setScale(glm.scale(scale))
             asteroid.setpos(glm.translate(glm.vec3(random.randint(-mp, mp), random.randint(-mp, mp), random.randint(-mp, mp))))
 
             progvar.ASSETS.append(asteroid)
@@ -260,7 +261,6 @@ class Program:
                         explosionshakeamt += (asset.getShockwaveScale()/glm.distance(player.getPos()*glm.vec4(0,0,0,1),asset.getPos()*glm.vec4(0,0,0,1)))*.001
 
             progvar.PLAYER = player
-            print(player.getRot()*glm.vec4(0,0,1,0))
 
             explosionshakeamt -= .002 if explosionshakeamt > .002 else -explosionshakeamt
             explosionshakeamt = explosionshakeamt if explosionshakeamt < 0.1 else 0.1

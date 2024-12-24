@@ -86,7 +86,7 @@ class StarShipTemplate(Actor):
     def __init__(self,
                  starshipCostumes,
                  minSpeed : float =0 ,
-                 maxSpeed : float =3 ,
+                 maxSpeed : float =5 ,
                  maxrotatespeed : float= 1/9,
                  maxhealth : float =1
     ):
