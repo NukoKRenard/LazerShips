@@ -57,6 +57,90 @@ class Prop:
     def getMatrix(self) -> glm.mat4:
         return self.__translation * self.__rotation * self.__scale
 
+#A C style function that reads a .obj file's model data and puts the vertex and index data into two given lists.
+def readModel(pathtomodel, vertexdata, indexdata):
+    # The following code is to parse the file into a program useable format.
+    # Temporary lists that hold different vertex attributes. These will be moved into the vertexdata list when the indexdata is read.
+    vertpos = []
+    normpos = []
+    texpos = []
+
+    maxindex = 0
+    # This list holds any indecies that have already been made. It is used so that we don't have to load new vertexes, and can just reuse old ones.
+    alreadymadevertdata = []
+
+    objData = []
+
+    # Opens the file and read it
+    with open(pathtomodel, 'r') as objFile:
+        objData = objFile.readlines()
+
+    # Reads all of the verticies, normals, faces, and texture coords in the .obj file and then stores them in the vertex and index data lists.
+    for databit in objData:
+
+        # Stores sets of texture coords into a temporary array.
+        if databit.startswith("vt"):
+            databitlist = databit.split(' ')[1:]
+            databitlistconverted = []
+            for value in databitlist:
+                databitlistconverted.append(float(value))
+            texpos.append(databitlistconverted)
+
+        # Stores a list of normals into a temporary array.
+        elif databit.startswith('vn'):
+            databitlist = databit.split(' ')[1:]
+            databitlistconverted = []
+            for value in databitlist:
+                databitlistconverted.append(float(value))
+            normpos.append(databitlistconverted)
+
+        # Stors a list of coordinates into a temporary array.
+        elif databit.startswith("v"):
+            databitlist = databit.split(' ')[1:]
+            databitlistconverted = []
+            for value in databitlist:
+                databitlistconverted.append(float(value))
+            vertpos.append(databitlistconverted)
+
+        # This part takes the temporary list of the three vertex, normal, and tex coord lists, from the previous three loops and then puts them into a vertex array
+        elif databit.startswith('f'):
+            databitlist = databit.split()[1:]
+            for face in databitlist:
+                # This if statement tests if we already have added that vertex into the vertexdata list (Some polygons shader vertexes with others, by using less vertexes our program becomes more efficient.)
+                if face.strip() not in alreadymadevertdata:
+                    alreadymadevertdata.append(face.strip())
+
+                    # Splits the index data into its positional, texture, and normal data.
+                    indexes = face.split('/')
+                    # Adds all of the found vertecies into the temporary vertexdata variable.
+                    for vert in vertpos[int(indexes[0]) - 1]:
+                        vertexdata.append(vert)
+                    # Adds all of the found normal data into the temporary normaldata variable. If the normals are not found it will append an empty value to avoid crashes.
+                    try:
+                        for norm in normpos[int(indexes[2]) - 1]:
+                            vertexdata.append(norm)
+                    # If the normal value is blank, it will fill the spaces with blank values
+                    except:
+                        vertexdata.append(0.0)
+                        vertexdata.append(0.0)
+                        vertexdata.append(0.0)
+                        print(f"Normal for face {databitlist} was not found.")
+                    # Adds all of the found texture data into the temporary texturedata variable. If the textures are not found it will append an empty value to avoid crashes.
+                    try:
+                        for tex in texpos[int(indexes[1]) - 1]:
+                            vertexdata.append(tex)
+                    except:
+                        vertexdata.append(0.0)
+                        vertexdata.append(0.0)
+                        print(f"Tex coord data for face {databitlist} was not found.")
+                    # Adds the new index to the indexdata list.
+                    indexdata.append(maxindex)
+                    # Increments the index number so that the next index is 1 higher.
+                    maxindex += 1
+                else:
+                    # If the face already exists, it locates its index value and adds it to the indexdata list.
+                    indexdata.append(alreadymadevertdata.index(face))
+
 
 #This is a basic model, everything you see on screen are props or costumes (costumes are props connected to actors.)
 class Model(Prop):
@@ -66,89 +150,11 @@ class Model(Prop):
         self.__opacity = 1
 
         self.__shaderID = shaderID
-        objData = []
-
-        #Opens the file and read it
-        with open(ObjFilePath, 'r') as objFile:
-            objData = objFile.readlines()
-
-        #The following code is to parse the file into a program useable format.
-        #Temporary lists that hold different vertex attributes. These will be moved into the vertexdata list when the indexdata is read.
-        vertpos = []
-        normpos = []
-        texpos = []
 
         vertexdata = []
-        maxindex = 0
         indexdata = []
-        #This list holds any indecies that have already been made. It is used so that we don't have to load new vertexes, and can just reuse old ones.
-        alreadymadevertdata = []
 
-        #Reads all of the verticies, normals, faces, and texture coords in the .obj file and then stores them in the vertex and index data lists.
-        for databit in objData:
-
-            #Stores sets of texture coords into a temporary array.
-            if databit.startswith("vt"):
-                databitlist = databit.split(' ')[1:]
-                databitlistconverted = []
-                for value in databitlist:
-                    databitlistconverted.append(float(value))
-                texpos.append(databitlistconverted)
-
-            #Stores a list of normals into a temporary array.
-            elif databit.startswith('vn'):
-                databitlist = databit.split(' ')[1:]
-                databitlistconverted = []
-                for value in databitlist:
-                    databitlistconverted.append(float(value))
-                normpos.append(databitlistconverted)
-
-            #Stors a list of coordinates into a temporary array.
-            elif databit.startswith("v"):
-                databitlist = databit.split(' ')[1:]
-                databitlistconverted = []
-                for value in databitlist:
-                    databitlistconverted.append(float(value))
-                vertpos.append(databitlistconverted)
-
-            #This part takes the temporary list of the three vertex, normal, and tex coord lists, from the previous three loops and then puts them into a vertex array
-            elif databit.startswith('f'):
-                databitlist = databit.split()[1:]
-                for face in databitlist:
-                    #This if statement tests if we already have added that vertex into the vertexdata list (Some polygons shader vertexes with others, by using less vertexes our program becomes more efficient.)
-                    if face.strip() not in alreadymadevertdata:
-                        alreadymadevertdata.append(face.strip())
-
-                        #Splits the index data into its positional, texture, and normal data.
-                        indexes = face.split('/')
-                        #Adds all of the found vertecies into the temporary vertexdata variable.
-                        for vert in vertpos[int(indexes[0]) - 1]:
-                            vertexdata.append(vert)
-                        #Adds all of the found normal data into the temporary normaldata variable. If the normals are not found it will append an empty value to avoid crashes.
-                        try:
-                            for norm in normpos[int(indexes[2]) - 1]:
-                                vertexdata.append(norm)
-                        #If the normal value is blank, it will fill the spaces with blank values
-                        except:
-                            vertexdata.append(0.0)
-                            vertexdata.append(0.0)
-                            vertexdata.append(0.0)
-                            print(f"Normal for face {databitlist} was not found.")
-                        #Adds all of the found texture data into the temporary texturedata variable. If the textures are not found it will append an empty value to avoid crashes.
-                        try:
-                            for tex in texpos[int(indexes[1]) - 1]:
-                                vertexdata.append(tex)
-                        except:
-                            vertexdata.append(0.0)
-                            vertexdata.append(0.0)
-                            print(f"Tex coord data for face {databitlist} was not found.")
-                        #Adds the new index to the indexdata list.
-                        indexdata.append(maxindex)
-                        #Increments the index number so that the next index is 1 higher.
-                        maxindex += 1
-                    else:
-                        #If the face already exists, it locates its index value and adds it to the indexdata list.
-                        indexdata.append(alreadymadevertdata.index(face))
+        readModel(ObjFilePath, vertexdata, indexdata)
 
         #Converts the vertex and index arrays to a format useable by OpenGL.
         self.__vertexdata = numpy.array(vertexdata,dtype=numpy.float32)
@@ -218,7 +224,7 @@ class Model(Prop):
                            glm.value_ptr(perspectiveMatrix))
         glUniformMatrix4fv(glGetUniformLocation(shaderlist[0], "worldMatrix"), 1, GL_FALSE,
                            glm.value_ptr(worldMatrix))
-        glUniform3f(glGetUniformLocation(shaderlist[0], "lightPos"), 1, 0, 0)
+        glUniform3f(glGetUniformLocation(shaderlist[0], "lightPos"), progvar.SUNPOS[0], progvar.SUNPOS[1], progvar.SUNPOS[2])
         glUniform1i(glGetUniformLocation(shaderlist[0], 'colourMap'), 0)
         glUniform1i(glGetUniformLocation(shaderlist[0], "glowMap"), 1)
         glUniform1i(glGetUniformLocation(shaderlist[0], "reflection"), 2)
@@ -240,6 +246,11 @@ class Model(Prop):
 
         self.__opacity = value
 
+    def setopacity(self,value : float):
+        value = (value if value > 0 else 0) if value < 1 else 1
+
+        self.__opacity = value
+
 #This is the skybox class that shows the space scene the ships all fight in.
 class Skybox(Prop):
     def __init__(self, texturepath : str):
@@ -247,15 +258,14 @@ class Skybox(Prop):
 
         #Vertex data for a cube. This is what the skybox is put on.
         vertexdata = (
-             1.0, 1.0, -1.0,
-             1.0,-1.0, -1.0,
+             1.0, 1.0,-1.0,
+             1.0,-1.0,-1.0,
              1.0, 1.0, 1.0,
              1.0,-1.0, 1.0,
             -1.0, 1.0,-1.0,
             -1.0,-1.0,-1.0,
             -1.0, 1.0, 1.0,
             -1.0,-1.0, 1.0
-
         )
 
         #Index data for the cube. This tells the shader how to use the vertex data.

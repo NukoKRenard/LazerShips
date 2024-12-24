@@ -2,7 +2,6 @@
 11/14/2024
 This file holds global variables to be used between the different modules.
 """
-import math
 import pygame
 pygame.init()
 
@@ -15,6 +14,13 @@ ASSETS = []
 #All ship objects that need to be calculated.
 global SHIPS
 SHIPS = []
+
+global SUNPOS
+SUNPOS = (0.993271,-0.00976281,0.115382)
+
+#Static objects are divided into chunks in order to make calculations easier. This allows objects to only compare with objects in the same chunk.
+global ASTEROIDS
+ASTEROIDS = []
 
 global PLAYER
 PLAYER = None
@@ -40,9 +46,3 @@ SHIPLOCKMAXDOT = .90
 
 global WEAPONRANGE
 WEAPONRANGE = 1000
-
-global EXPLOSIONSFX
-EXPLOSIONSFX = pygame.mixer.Sound("sfx/Explosion.wav")
-
-global LAZERSFX
-LAZERSFX = pygame.mixer.Sound("sfx/Explosion.wav")

@@ -6,6 +6,8 @@ This file contains datatypes for the game. These datatypes have no physical repr
 import random
 import glm
 
+import internal.globalvariables as progvar
+
 #A team is a collection of ships. A ship's team can be used to get allies, and enemies.
 class Team:
     def __init__(self,teamname : str,ships : list,enemyteams : list, teamcolor : tuple[float,float,float]):
@@ -69,6 +71,6 @@ class Team:
         return self.__ships
 
     def notifyOfDistress(self,caller):
-        """for ship in self.__ships:
+        for ship in self.__ships:
             if random.random() <= 0.15 and ship.getHealth() > (ship.getMaxHealth()/4.0)*3.0 and ship.getAI():
-                ship.setTarget(caller.getTarget())"""
+                ship.setTarget(caller.getTarget())

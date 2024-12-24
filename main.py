@@ -13,7 +13,11 @@ import internal.globalvariables as progvar
 import internal.camera as camera
 import internal.props as props
 import internal.actors as actors
-import internal.datatypes as datatypes
+import internal.methods as datatypes
+
+import internal.levelobjects as levelobjects
+from internal.globalvariables import MAPSIZE
+
 
 class Program:
     def __init__(self):
@@ -29,10 +33,22 @@ class Program:
         progvar.CAMERA = camera.ShipCamera(90,screen.get_size(),rendertarget=0,offset=cameraoffset)
 
         # Entities
+
         #The progvar.ASSETS list is used for drawing to the screen. If something needs to be shown on screen it needs to be here.
         progvar.ASSETS = []
         #The progvar.SHIPS list is used for detecting colissions. It is faster to use a seperate list than to check every item in the draw list.
         progvar.SHIPS = []
+
+        #Populates the map with asteroids
+        for i in range(200):
+            mp = progvar.MAPSIZE // 2
+            asteroid = actors.Asteroid()
+
+            asteroid.setScale(glm.scale(glm.vec3(random.random(),random.random(),random.random())*50))
+            asteroid.setpos(glm.translate(glm.vec3(random.randint(-mp, mp), random.randint(-mp, mp), random.randint(-mp, mp))))
+
+            progvar.ASSETS.append(asteroid)
+            progvar.ASTEROIDS.append(asteroid)
 
         #Teams are how the ships allignthemselves and choose their enemies. Each ship has a team, which is how they pick targets,
         avaxTeam = datatypes.Team("Avax", [], [],(.5, 1, 1))
@@ -42,18 +58,20 @@ class Program:
         avaxTeam.declareWar(tx01Team)
         tx01Team.declareWar(avaxTeam)
 
-        blueteam_ship = props.Model("levelobjects/Starship.obj",
-                               "levelobjects/texturedata/StarshipColourMapBlue.png",
-                               "levelobjects/texturedata/StarshipRoughnessGlowmap.png")
-        redteam_ship = props.Model("levelobjects/Starship.obj",
-                                    "levelobjects/texturedata/StarshipColourMapRed.png",
-                                    "levelobjects/texturedata/StarshipRoughnessGlowmap.png")
         #Creates a skybox
         progvar.SKYBOX = props.Skybox("skyboxes/mapskybox")
         progvar.ASSETS.append(progvar.SKYBOX)
 
         #Adds the camera to the assets list (They are treated the same as actors in game code and need to be updated in order to render.)
         progvar.ASSETS.append(progvar.CAMERA)
+
+        blueteam_ship = props.Model("levelobjects/Starship.obj",
+                                    "levelobjects/texturedata/StarshipColourMapBlue.png",
+                                    "levelobjects/texturedata/StarshipRoughnessGlowmap.png")
+
+        redteam_ship = props.Model("levelobjects/Starship.obj",
+                                   "levelobjects/texturedata/StarshipColourMapRed.png",
+                                   "levelobjects/texturedata/StarshipRoughnessGlowmap.png")
 
         #Adds a number of ships for each team
         for i in range(20):
@@ -242,6 +260,7 @@ class Program:
                         explosionshakeamt += (asset.getShockwaveScale()/glm.distance(player.getPos()*glm.vec4(0,0,0,1),asset.getPos()*glm.vec4(0,0,0,1)))*.001
 
             progvar.PLAYER = player
+            print(player.getRot()*glm.vec4(0,0,1,0))
 
             explosionshakeamt -= .002 if explosionshakeamt > .002 else -explosionshakeamt
             explosionshakeamt = explosionshakeamt if explosionshakeamt < 0.1 else 0.1

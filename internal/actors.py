@@ -7,16 +7,16 @@ actors effect the flow of the game.
 import copy
 from os import times
 
+from unicodedata import normalize
+
 import internal.globalvariables as progvar
 import glm
 import pygame
 import random
 import internal.props as props
-import internal.datatypes as datatypes
+import internal.methods as datatypes
 
-from math import *
-
-
+import internal.levelobjects as levelobjects
 
 #This is a template for an actor type. Sets some default values.
 class Actor:
@@ -229,13 +229,13 @@ class AIShip(StarShipTemplate):
         self.__enemyDot = 1
         self.__hasLock = False
         self.__name = Name
-        self.__lazerSfx = sfx3D(progvar.LAZERSFX,True)
+        self.__lazerSfx = sfx3D(levelobjects.lazersfx,True)
         self.addCostume(self.__lazerSfx)
         self.__lastAttacker = None
         self.__distressUsed = False
 
         self.__lazer = props.Lazer((self.getPos()*glm.vec4(0,0,0,1)).xyz,(self.getPos()*glm.vec4(0,0,0,1)).xyz,self.__team.getTeamColor())
-        progvar.ASSETS.append(self.__lazer)
+        self.addCostume(self.__lazer)
 
     def update(self, parentMatrix : glm.mat4 = glm.mat4(1)) -> None:
         StarShipTemplate.update(self, parentMatrix)
@@ -260,14 +260,14 @@ class AIShip(StarShipTemplate):
             else:
                 self.__hasLock = False
 
-            if self.__AI and self.__target:
+            if self.__target:
                 # Control's the AI's target choices, and replaces it with a new one if needed.
-                if (self.__lastfiretime - (pygame.time.get_ticks())) / 60 > progvar.AIAMNESIA:
+                if (self.__lastfiretime - (pygame.time.get_ticks())) / 60 > progvar.AIAMNESIA and self.__AI:
                     self.__target = self.__team.getRandomEnemy()
                     self.__timesincelastfire = pygame.time.get_ticks()
 
                 #Decides weither or weither to not fire on the targeted ship
-                if self.isLocked():
+                if self.isLocked() and self.__AI:
                     self.fire()
                     self.__lastfiretime = pygame.time.get_ticks()
 
@@ -288,19 +288,34 @@ class AIShip(StarShipTemplate):
                                 collidevector += itempos
                             else:
                                 collidevector = itempos
+                for asteroid in progvar.ASTEROIDS:
+                    if asteroid.getPos() != self.getPos():
+                        itemdist = glm.distance((asteroid.getPos()*glm.vec4(0,0,0,1)).xyz,(self.getPos()*glm.vec4(0,0,0,1)).xyz)
+                        if itemdist < 50:
+                            self.damage(self.getMaxHealth())
+                            ship.damage(ship.getMaxHealth())
+                            break
+
+                        elif itemdist < 200-self.__recklessness*20:
+                            itempos = glm.normalize(glm.inverse(glm.inverse(self.getPos())*asteroid.getPos())*glm.vec4(0,0,0,1)).xyz
+
+                            if collidevector:
+                                collidevector += itempos
+                            else:
+                                collidevector = itempos
 
                 #Movement heiarchy
                 # If you are nearly out of the map boundary return back to the map
                 # Otherwise if there is a colission imminent avoid it.
                 # Otherwise if your target is chasing you do evasive maneuvers
                 # Otherwise chase your target.
-                if glm.length((self.getPos()*glm.vec4(0,0,0,1)).xyz) > progvar.MAPSIZE-100 or not self.__target:
+                if glm.length((self.getPos()*glm.vec4(0,0,0,1)).xyz) > progvar.MAPSIZE-100 or not self.__target and self.__AI:
                     self.goToPos(glm.vec3(0,0,0))
-                #elif glm.dot((glm.inverse(self.__target.getPos())*self.getPos()*glm.vec4(0,0,0,1)).xyz,(self.__target.getRot()*glm.vec4(0,0,1,0)).xyz) > .9 and glm.dot((glm.inverse(self.getPos())*self.__target.getPos()*glm.vec4(0,0,0,1)).xyz,(self.getRot()*glm.vec4(0,0,1,0)).xyz) <= 0:
+                #elif glm.dot((glm.inverse(self.__target.getPos())*self.getPos()*glm.vec4(0,0,0,1)).xyz,(self.__target.getRot()*glm.vec4(0,0,1,0)).xyz) > .9 and glm.dot((glm.inverse(self.getPos())*self.__target.getPos()*glm.vec4(0,0,0,1)).xyz,(self.getRot()*glm.vec4(0,0,1,0)).xyz) <= 0 and self.__AI:
                 #    self.goToPos((self.getPos()*glm.vec4(random.random(),random.random(),random.random(),1.0)).xyz)
-                elif collidevector:
+                elif collidevector and self.__AI:
                     self.goToPos((self.getPos()*glm.vec4(collidevector,1)).xyz)
-                elif self.__target:
+                elif self.__target and self.__AI:
                     self.goToPos((self.__target.getPos()*glm.vec4(0,0,0,1)).xyz)
 
     def goToPos(self, pos):
@@ -366,7 +381,6 @@ class AIShip(StarShipTemplate):
             self.targetAttacker()
         if StarShipTemplate.damage(self,points,attacker):
             self.__team.removeFromTeam(self)
-            self.__lazer.removefromgame()
             return True
 
         if self.getHealth() < self.getMaxHealth()/2.0 and self.__target == progvar.PLAYER and not self.__distressUsed:
@@ -391,6 +405,20 @@ class AIShip(StarShipTemplate):
         return self.__name
     def getAI(self):
         return self.__AI
+
+class Asteroid(Actor):
+    def __init__(self):
+
+        self.__asteroidmodel = props.Model("levelobjects/Asteroid.obj",
+                                           "levelobjects/texturedata/Asteroid.png",
+                                           "levelobjects/texturedata/GlowMapEmpty.png")
+
+        Actor.__init__(self,[self.__asteroidmodel])
+
+        self.__movedir = glm.rotate(random.random()*1/60,glm.normalize(glm.vec3(random.uniform(-1,1),random.uniform(-1,1),random.uniform(-1,1))))
+    def update(self,parentMatrix : glm.mat4 = glm.mat4(1)) -> None:
+        Actor.update(self,parentMatrix)
+        self.rotate(self.__movedir)
 
 class healthBar(Actor):
    def __init__(self, color : tuple[int,int,int] = (0,200,200), ship : AIShip = None):
@@ -441,13 +469,15 @@ class ExplosionEffect(Actor):
 
         self.__shockwave = props.Model("levelobjects/TexturePlane.obj",
                                     "levelobjects/texturedata/ShockWaveTexture.png",
-                                    "levelobjects/texturedata/ShockWaveGlowMap.png")
+                                     "levelobjects/texturedata/ShockWaveGlowMap.png"
+                                       )
+
         self.__shockwave.setScale(glm.scale((1,1,1))*scale)
         self.__shockwave.setrot(rotation)
         self.__shockwave.setpos(position)
         self.addCostume(self.__shockwave)
 
-        self.__sound = sfx3D(progvar.EXPLOSIONSFX)
+        self.__sound = sfx3D(levelobjects.explosionsfx)
         self.addCostume(self.__sound)
 
         self.setpos(position)
