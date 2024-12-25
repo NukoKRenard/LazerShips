@@ -28,7 +28,7 @@ class Program:
         screen = pygame.display.set_mode((0,0), pygame.OPENGL | pygame.DOUBLEBUF | pygame.FULLSCREEN)
 
 
-        cameraoffset = glm.translate((0,5,-20))
+        cameraoffset = glm.translate((0,7,-15))
         #Creates a camera actor, and tells it to draw directly to the pygame window. (Setting rendertarget to 0 means it will draw directly to the screen instead of a texture.)
         progvar.CAMERA = camera.ShipCamera(90,screen.get_size(),rendertarget=0,offset=cameraoffset)
 
@@ -66,9 +66,9 @@ class Program:
         #Adds the camera to the assets list (They are treated the same as actors in game code and need to be updated in order to render.)
         progvar.ASSETS.append(progvar.CAMERA)
 
-        blueteam_ship = props.Model("levelobjects/Starship.obj",
-                                    "levelobjects/texturedata/StarshipColourMapBlue.png",
-                                    "levelobjects/texturedata/StarshipRoughnessGlowmap.png")
+        blueteam_ship = props.Model("levelobjects/AvaxShip.obj",
+                                    "levelobjects/texturedata/AvaxShipBase.png",
+                                    "levelobjects/texturedata/AvaxShipGlowMap.png")
 
         redteam_ship = props.Model("levelobjects/Starship.obj",
                                    "levelobjects/texturedata/StarshipColourMapRed.png",

@@ -86,7 +86,7 @@ class StarShipTemplate(Actor):
     def __init__(self,
                  starshipCostumes,
                  minSpeed : float =0 ,
-                 maxSpeed : float =5 ,
+                 maxSpeed : float =3 ,
                  maxrotatespeed : float= 1/9,
                  maxhealth : float =1
     ):
@@ -291,43 +291,51 @@ class AIShip(StarShipTemplate):
                 for asteroid in progvar.ASTEROIDS:
                     if asteroid.getPos() != self.getPos():
                         itemdist = glm.distance((asteroid.getPos()*glm.vec4(0,0,0,1)).xyz,(self.getPos()*glm.vec4(0,0,0,1)).xyz)
-                        if itemdist < 50:
+                        if itemdist < 30 if not self.__AI else itemdist < 10:
                             self.damage(self.getMaxHealth())
                             ship.damage(ship.getMaxHealth())
                             break
 
-                        elif itemdist < 200-self.__recklessness*20:
+                        elif itemdist < 1000:
                             itempos = glm.normalize(glm.inverse(glm.inverse(self.getPos())*asteroid.getPos())*glm.vec4(0,0,0,1)).xyz
 
                             if collidevector:
-                                collidevector += itempos
+                                collidevector += itempos*(100/itemdist)
                             else:
-                                collidevector = itempos
+                                collidevector = itempos*(100/itemdist)
 
                 #Movement heiarchy
                 # If you are nearly out of the map boundary return back to the map
                 # Otherwise if there is a colission imminent avoid it.
                 # Otherwise if your target is chasing you do evasive maneuvers
                 # Otherwise chase your target.
-                if glm.length((self.getPos()*glm.vec4(0,0,0,1)).xyz) > progvar.MAPSIZE-100 or not self.__target and self.__AI:
-                    self.goToPos(glm.vec3(0,0,0))
-                #elif glm.dot((glm.inverse(self.__target.getPos())*self.getPos()*glm.vec4(0,0,0,1)).xyz,(self.__target.getRot()*glm.vec4(0,0,1,0)).xyz) > .9 and glm.dot((glm.inverse(self.getPos())*self.__target.getPos()*glm.vec4(0,0,0,1)).xyz,(self.getRot()*glm.vec4(0,0,1,0)).xyz) <= 0 and self.__AI:
-                #    self.goToPos((self.getPos()*glm.vec4(random.random(),random.random(),random.random(),1.0)).xyz)
+                if glm.length((self.getPos() * glm.vec4(0, 0, 0,1)).xyz) > progvar.MAPSIZE - 1000 or not self.__target and self.__AI:
+                    self.goToPos(glm.vec3(0, 0, 0))
+
                 elif collidevector and self.__AI:
-                    self.goToPos((self.getPos()*glm.vec4(collidevector,1)).xyz)
+
+                    targetpos = (self.__target.getPos()*glm.vec4(0,0,0,1)).xyz
+                    avoidencepos = (self.getPos()*glm.vec4(collidevector,1)).xyz
+
+                    self.goToPos(targetpos + avoidencepos)
+
+                elif glm.dot((glm.inverse(self.__target.getPos())*self.getPos()*glm.vec4(0,0,0,1)).xyz,(self.__target.getRot()*glm.vec4(0,0,1,0)).xyz) > .9 and glm.dot((glm.inverse(self.getPos())*self.__target.getPos()*glm.vec4(0,0,0,1)).xyz,(self.getRot()*glm.vec4(0,0,1,0)).xyz) <= 0 and self.__AI:
+                    self.goToPos((self.getPos()*glm.vec4(random.random(),random.random(),random.random(),1.0)).xyz)
+
                 elif self.__target and self.__AI:
                     self.goToPos((self.__target.getPos()*glm.vec4(0,0,0,1)).xyz)
 
     def goToPos(self, pos):
-        relativepos = glm.vec4((glm.inverse(self.getPos())*glm.vec4(pos,1)).xyz,0)
-        localdir = glm.normalize(glm.inverse(self.getRot())*relativepos)
-        thrustvec = glm.normalize(localdir.xy + (-.5+glm.vec2(random.random(),random.random()))*2*(progvar.AITARGETINGINNACURACY))
+        if self.__AI:
+            relativepos = glm.vec4((glm.inverse(self.getPos())*glm.vec4(pos,1)).xyz,0)
+            localdir = glm.normalize(glm.inverse(self.getRot())*relativepos)
+            thrustvec = glm.normalize(localdir.xy + (-.5+glm.vec2(random.random(),random.random()))*2*(progvar.AITARGETINGINNACURACY))
 
-        self.pitch(-thrustvec.y+self.getPitchVelocity())
-        self.yaw(thrustvec.x-self.getYawVelocity())
-        self.roll(thrustvec.x-self.getRollVelocity())
+            self.pitch(-thrustvec.y+self.getPitchVelocity())
+            self.yaw(thrustvec.x-self.getYawVelocity())
+            self.roll(thrustvec.x-self.getRollVelocity())
 
-        self.throttleSpeed(1)
+            self.throttleSpeed(1.0)
 
 
 
