@@ -33,7 +33,7 @@ void main()
     vec4 basetexture = texture(colourMap,texCoord);
     //This calculated the darkness value of the pixel based off of how close to the light it is facing (if it faces towards the light it would be bright, if it faces away from the light it will be dark.)
     //This line will also add a texture to the texture, where (for example with the engine flame) we don't want them to darken with light as they would produce their own. Glow data is passed through the green channel.
-    vec4 littexture = vec4(clamp(basetexture*dot(normal.xyz,lightPos),0,1).rgb,basetexture.a) + vec4(texture(colourMap,texCoord).rgb*texture(glowMap,texCoord).g,0.0);
+    vec4 littexture = vec4(clamp(basetexture*dot(lightPos,normal.xyz),0,1).rgb,basetexture.a) + vec4(texture(colourMap,texCoord).rgb*texture(glowMap,texCoord).g,0.0);
     //This calculates the white highlights in the texture. This is the white shine we see on points that reflect the light of the sun.
     //To calculate this we take the camera's position, reflect it across the surface of the ship, and find how close it is to the light source. The closer the brighter.
     vec4 highlights =vec4(clamp(pow(dot(normalize(camera_pos.xyz-position),normalize(reflect(lightPos,normal.xyz))),10),0,1))*texture(glowMap,texCoord).r;

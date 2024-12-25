@@ -16,7 +16,7 @@ import random
 import internal.props as props
 import internal.methods as datatypes
 
-import internal.levelobjects as levelobjects
+import internal.loadedsfx as loadedsfx
 
 #This is a template for an actor type. Sets some default values.
 class Actor:
@@ -108,6 +108,8 @@ class StarShipTemplate(Actor):
 
     def update(self, parentMatrix : glm.mat4 = glm.mat4(1)) -> None:
         Actor.update(self, parentMatrix)
+
+
 
         self.__dx -= self.__dx / 100
         self.__dy -= self.__dy / 100
@@ -229,10 +231,13 @@ class AIShip(StarShipTemplate):
         self.__enemyDot = 1
         self.__hasLock = False
         self.__name = Name
-        self.__lazerSfx = sfx3D(levelobjects.lazersfx,True)
-        self.addCostume(self.__lazerSfx)
         self.__lastAttacker = None
         self.__distressUsed = False
+        self.__velocityLastFrame = self.getThrottleSpeed()
+
+        self.__engineSfx = [sfx3D(pygame.mixer.Sound(soundfile)) for soundfile in loadedsfx.avaxEngine]
+        for sound in self.__engineSfx:
+            self.addCostume(sound)
 
         self.__lazer = props.Lazer((self.getPos()*glm.vec4(0,0,0,1)).xyz,(self.getPos()*glm.vec4(0,0,0,1)).xyz,self.__team.getTeamColor())
         self.addCostume(self.__lazer)
@@ -242,10 +247,8 @@ class AIShip(StarShipTemplate):
 
         if self.__firing:
             self.__lazer.setvisible()
-            self.__lazerSfx.play()
         else:
             self.__lazer.setnotvisible()
-            self.__lazerSfx.stop()
         self.__firing = False
 
         if not self.__target or self.__target not in progvar.SHIPS:
@@ -291,7 +294,7 @@ class AIShip(StarShipTemplate):
                 for asteroid in progvar.ASTEROIDS:
                     if asteroid.getPos() != self.getPos():
                         itemdist = glm.distance((asteroid.getPos()*glm.vec4(0,0,0,1)).xyz,(self.getPos()*glm.vec4(0,0,0,1)).xyz)
-                        if itemdist < 30 if not self.__AI else itemdist < 10:
+                        if itemdist < 20 if not self.__AI else itemdist < 10:
                             self.damage(self.getMaxHealth())
                             ship.damage(ship.getMaxHealth())
                             break
@@ -324,6 +327,23 @@ class AIShip(StarShipTemplate):
 
                 elif self.__target and self.__AI:
                     self.goToPos((self.__target.getPos()*glm.vec4(0,0,0,1)).xyz)
+
+        velocitychange = self.getThrottleSpeed() - self.__velocityLastFrame
+
+        if velocitychange > 0.01:
+            for engineSound in self.__engineSfx:
+                if engineSound != self.__engineSfx[0]:
+                    engineSound.stop()
+                else:
+                    engineSound.play()
+        elif velocitychange < -0.01:
+            for engineSound in self.__engineSfx:
+                if engineSound != self.__engineSfx[1]:
+                    engineSound.stop()
+                else:
+                    engineSound.play()
+
+        self.__velocityLastFrame = self.getThrottleSpeed()
 
     def goToPos(self, pos):
         if self.__AI:
@@ -485,7 +505,7 @@ class ExplosionEffect(Actor):
         self.__shockwave.setpos(position)
         self.addCostume(self.__shockwave)
 
-        self.__sound = sfx3D(levelobjects.explosionsfx)
+        self.__sound = sfx3D(loadedsfx.explosion)
         self.addCostume(self.__sound)
 
         self.setpos(position)
@@ -506,9 +526,8 @@ class ExplosionEffect(Actor):
         return glm.length(self.__shockwave.getScale()*glm.vec4(1,1,1,0))/3
 
 class sfx3D(Actor):
-    def __init__(self,sound : pygame.mixer.Sound, looping : bool = False):
+    def __init__(self,sound : pygame.mixer.Sound):
         self.__sfx = sound
-        self.__looping = looping
         self.__sfxchannel = None
         self.__playingnow = False
 
@@ -518,21 +537,17 @@ class sfx3D(Actor):
         worldpos = parentMatrix * self.getPos()
         Actor.update(self,worldpos)
 
-
         playerdist = glm.distance((worldpos*glm.vec4(0,0,0,1)).xyz,(progvar.CAMERA.getPos()*glm.vec4(0,0,0,1)).xyz)
+        playerdist = playerdist if playerdist != 0 else 1
 
-        self.__sfx.set_volume(1/(playerdist/100) if playerdist != 0 else 1)
+        self.__sfx.set_volume(1000/playerdist)
+
+    def play(self, repeats : int = 0):
         if self.__sfxchannel:
-            if self.__looping and self.__playingnow and not self.__sfxchannel.get_busy():
-                self.__sfxchannel = self.__sfx.play()
-            elif not self.__sfxchannel.get_busy():
-                self.__playingnow = False
-
-    def play(self):
-        if not self.__playingnow:
-            self.__sfxchannel = self.__sfx.play()
-            self.__playingnow = True
+            if self.__sfxchannel.get_busy():
+                self.__sfxchannel = self.__sfx.play(loops=repeats)
+        else:
+            self.__sfxchannel = self.__sfx.play(loops=repeats)
 
     def stop(self):
         self.__sfx.stop()
-        self.__playingnow = False

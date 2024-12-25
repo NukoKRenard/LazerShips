@@ -15,8 +15,7 @@ import internal.props as props
 import internal.actors as actors
 import internal.methods as datatypes
 
-import internal.levelobjects as levelobjects
-from internal.globalvariables import MAPSIZE
+pygame.mixer.init(channels=100)
 
 
 class Program:
