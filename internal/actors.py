@@ -68,7 +68,7 @@ class Actor:
     def update(self,parentMatrix : glm.mat4 = glm.mat4(1)) -> None:
         for costume in self.__costumes:
             if issubclass(type(costume),Actor):
-                costume.update(parentMatrix)
+                costume.update(parentMatrix*self.getPos())
 
     def removefromgame(self) -> None:
         if self in progvar.ASSETS:
@@ -235,8 +235,8 @@ class AIShip(StarShipTemplate):
         self.__distressUsed = False
         self.__velocityLastFrame = self.getThrottleSpeed()
 
-        self.__engineSfx = [sfx3D(pygame.mixer.Sound(soundfile)) for soundfile in loadedsfx.avaxEngine]
-        for sound in self.__engineSfx:
+        self.__Sfx = [sfx3D(pygame.mixer.Sound(soundfile)) for soundfile in loadedsfx.avaxShip]
+        for sound in self.__Sfx:
             self.addCostume(sound)
 
         self.__lazer = props.Lazer((self.getPos()*glm.vec4(0,0,0,1)).xyz,(self.getPos()*glm.vec4(0,0,0,1)).xyz,self.__team.getTeamColor())
@@ -279,7 +279,7 @@ class AIShip(StarShipTemplate):
                 for ship in progvar.SHIPS:
                     if isinstance(ship,AIShip) and ship.getPos() != self.getPos():
                         itemdist = glm.distance((ship.getPos()*glm.vec4(0,0,0,1)).xyz,(self.getPos()*glm.vec4(0,0,0,1)).xyz)
-                        if itemdist < 20:
+                        if itemdist < (20 if not self.__AI else 10):
                             self.damage(self.getMaxHealth())
                             ship.damage(ship.getMaxHealth())
                             break
@@ -294,7 +294,7 @@ class AIShip(StarShipTemplate):
                 for asteroid in progvar.ASTEROIDS:
                     if asteroid.getPos() != self.getPos():
                         itemdist = glm.distance((asteroid.getPos()*glm.vec4(0,0,0,1)).xyz,(self.getPos()*glm.vec4(0,0,0,1)).xyz)
-                        if itemdist < 20 if not self.__AI else itemdist < 10:
+                        if itemdist < (20 if not self.__AI else 5):
                             self.damage(self.getMaxHealth())
                             ship.damage(ship.getMaxHealth())
                             break
@@ -330,18 +330,24 @@ class AIShip(StarShipTemplate):
 
         velocitychange = self.getThrottleSpeed() - self.__velocityLastFrame
 
-        if velocitychange > 0.01:
-            for engineSound in self.__engineSfx:
-                if engineSound != self.__engineSfx[0]:
+        if velocitychange > 0.005:
+            for engineSound in self.__Sfx:
+                if engineSound != self.__Sfx[0]:
                     engineSound.stop()
                 else:
                     engineSound.play()
-        elif velocitychange < -0.01:
-            for engineSound in self.__engineSfx:
-                if engineSound != self.__engineSfx[1]:
+        elif velocitychange < -0.005:
+            for engineSound in self.__Sfx:
+                if engineSound != self.__Sfx[1]:
                     engineSound.stop()
                 else:
                     engineSound.play()
+
+        if self.__firing:
+            self.__Sfx[2].play()
+        else:
+            self.__Sfx[2].stop()
+
 
         self.__velocityLastFrame = self.getThrottleSpeed()
 
@@ -540,7 +546,7 @@ class sfx3D(Actor):
         playerdist = glm.distance((worldpos*glm.vec4(0,0,0,1)).xyz,(progvar.CAMERA.getPos()*glm.vec4(0,0,0,1)).xyz)
         playerdist = playerdist if playerdist != 0 else 1
 
-        self.__sfx.set_volume(1000/playerdist)
+        self.__sfx.set_volume(100/playerdist)
 
     def play(self, repeats : int = 0):
         if self.__sfxchannel:
@@ -551,3 +557,9 @@ class sfx3D(Actor):
 
     def stop(self):
         self.__sfx.stop()
+
+    def isPlaying(self):
+        if self.__sfxchannel:
+            return self.__sfxchannel.get_busy()
+        else:
+            return False

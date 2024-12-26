@@ -15,7 +15,7 @@ import internal.props as props
 import internal.actors as actors
 import internal.methods as datatypes
 
-pygame.mixer.init(channels=100)
+pygame.mixer.init(channels=1000,buffer=1000)
 
 
 class Program:
