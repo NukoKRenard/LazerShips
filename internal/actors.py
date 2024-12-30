@@ -31,16 +31,14 @@ class Actor:
 
     def drawObj(self, worldMatrix : glm.mat4, perspectiveMatrix : glm.mat4,
                 shaderlist : list[int],
-                vertexbufferlist : list[int],
-                indexbufferlist : list[int],
+                camera,
                 parentMatrix : glm.mat4(1) = glm.mat4(1)
                 ) -> None:
         for costume in self.__costumes:
             costume.drawObj(
                 worldMatrix, perspectiveMatrix,
                 shaderlist,
-                vertexbufferlist,
-                indexbufferlist,
+                camera,
                 parentMatrix*(self.__translation*self.__rotation*self.__scale)
             )
 
@@ -73,6 +71,9 @@ class Actor:
     def removefromgame(self) -> None:
         if self in progvar.ASSETS:
             progvar.ASSETS.remove(self)
+        for costume in self.__costumes:
+            if isinstance(costume,sfx3D):
+                costume.stop()
     def getCostumes(self) -> list:
         return self.__costumes
     def addCostume(self, costume) -> None:
@@ -215,6 +216,7 @@ class StarShipTemplate(Actor):
         Actor.removefromgame(self)
         if self in progvar.SHIPS:
             progvar.SHIPS.remove(self)
+
         for ship in progvar.SHIPS:
             if ship.getTarget() == self:
                 ship.switchtarget(1)
@@ -249,6 +251,15 @@ class AIShip(StarShipTemplate):
             self.__lazer.setvisible()
         else:
             self.__lazer.setnotvisible()
+
+        if progvar.PLAYER:
+            if self.__firing and glm.distance(self.getPos()*glm.vec4(0,0,0,1),progvar.PLAYER.getPos()*glm.vec4(0,0,0,1)) < 1000:
+                self.__Sfx[2].play(-1)
+            else:
+                self.__Sfx[2].stop()
+        else:
+            self.__Sfx[2].stop()
+
         self.__firing = False
 
         if not self.__target or self.__target not in progvar.SHIPS:
@@ -342,12 +353,6 @@ class AIShip(StarShipTemplate):
                     engineSound.stop()
                 else:
                     engineSound.play()
-
-        if self.__firing:
-            self.__Sfx[2].play()
-        else:
-            self.__Sfx[2].stop()
-
 
         self.__velocityLastFrame = self.getThrottleSpeed()
 
@@ -546,7 +551,7 @@ class sfx3D(Actor):
         playerdist = glm.distance((worldpos*glm.vec4(0,0,0,1)).xyz,(progvar.CAMERA.getPos()*glm.vec4(0,0,0,1)).xyz)
         playerdist = playerdist if playerdist != 0 else 1
 
-        self.__sfx.set_volume(100/playerdist)
+        self.__sfx.set_volume(50/playerdist)
 
     def play(self, repeats : int = 0):
         if self.__sfxchannel:
@@ -556,6 +561,7 @@ class sfx3D(Actor):
             self.__sfxchannel = self.__sfx.play(loops=repeats)
 
     def stop(self):
+        self.__sfxchannel = None
         self.__sfx.stop()
 
     def isPlaying(self):

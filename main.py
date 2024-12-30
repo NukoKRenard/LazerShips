@@ -4,6 +4,8 @@ This file is the entry point of the program. It holds the Program() class which 
 """
 #Import and Initialize
 import pygame
+pygame.init()
+pygame.mixer.init(channels=500,buffer=10000)
 import glm
 import copy
 import random
@@ -15,12 +17,10 @@ import internal.props as props
 import internal.actors as actors
 import internal.methods as datatypes
 
-pygame.mixer.init(channels=1000,buffer=1000)
-
 
 class Program:
     def __init__(self):
-        pygame.init()
+
 
         #Display
         #Creates the pygame window.
@@ -131,6 +131,7 @@ class Program:
         userhasquit = False
         explosionshakeamt = 0
 
+        print(progvar.MODELDATA)
         #Loop
         while not userhasquit:
             #Time

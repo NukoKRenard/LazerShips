@@ -110,14 +110,6 @@ class Camera(Actor):
         self.frameBufferAttachments = numpy.array(self.frameBufferAttachments, dtype=numpy.uint32)
         glDrawBuffers(1, self.frameBufferAttachments)
 
-        self.vertexBuffer = glGenBuffers(1)
-        glBindBuffer(GL_ARRAY_BUFFER, self.vertexBuffer)
-
-        self.indexBuffer = glGenBuffers(1)
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, self.indexBuffer)
-        if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE):
-            raise Exception("Post processing framebuffer failed to load.")
-
         glBindFramebuffer(GL_FRAMEBUFFER,0)
         glViewport(0, 0, self.__screensize[0], self.__screensize[1])
         # Enables some opengl functions (Blending (which allows semi transparent objects), and depth test (which tells opengl to draw closer objects over farther objects)
@@ -126,21 +118,20 @@ class Camera(Actor):
         glEnable(GL_DEPTH_TEST)
         glDepthFunc(GL_LESS)
 
+        self.__lastVAO = 0
+
     def render(self) -> None:
         #Rencers the scene to the pre processing buffer
         glBindFramebuffer(GL_FRAMEBUFFER, self.preProcessBuffer)
         glViewport(0, 0, self.__screensize[0], self.__screensize[1])
-        glBindBuffer(GL_ARRAY_BUFFER,self.vertexBuffer)
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,self.indexBuffer)
         self.worldMatrix = glm.lookAt(glm.vec3(self.position), glm.vec3(self.position + self.direction),glm.vec3(self.up))
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
         for object in progvar.ASSETS:
             if object not in self.getCostumes():
                 object.drawObj(self.worldMatrix,self.perspectiveMatrix,
-                           (self.starshipShader,self.skyboxShader,self.lazerShader,self.spriteShader,self.sparkShader),
-                           self.vertexBuffer,
-                           self.indexBuffer
-                           )
+                        (self.starshipShader,self.skyboxShader,self.lazerShader,self.spriteShader,self.sparkShader),
+                        self
+                        )
 
         #Takes the pre processing buffer, and puts it into the post processing shader.
         glUseProgram(self.postProcessingShader)
@@ -177,6 +168,9 @@ class Camera(Actor):
 
         # Draws the new image to the screen.
         glDrawArrays(GL_QUADS,0,4)
+    def getLastVAO(self):
+        return self.__lastVAO
+
     def getScreenDimensions(self) -> tuple[int,int]:
         return self.__screensize
 
@@ -222,6 +216,8 @@ class Camera(Actor):
         elif value < 0:
             value = 0
         self.__shake = value
+    def getAspectRatio(self) -> float:
+        return self.getScreenDimensions()[0]/self.getScreenDimensions()[1]
 
 class ShipCamera(Camera):
     def __init__(self,fovy : int,screenwh : tuple[int,int],rendertarget : int =0,parentship : StarShipTemplate | None =None,offset : glm.mat4 = glm.mat4(1)):
@@ -241,6 +237,3 @@ class ShipCamera(Camera):
 
     def getShip(self) -> StarShipTemplate:
         return self.__parentship
-
-    def getAspectRatio(self) -> float:
-        return self.getScreenDimensions()[0]/self.getScreenDimensions()[1]

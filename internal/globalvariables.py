@@ -15,6 +15,9 @@ ASSETS = []
 global SHIPS
 SHIPS = []
 
+global MODELDATA
+MODELDATA = {}
+
 global SUNPOS
 SUNPOS = (0.993271,-0.00976281,0.115382)
 
