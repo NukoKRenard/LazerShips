@@ -1,11 +1,1 @@
-Fix ships crashing into each other
-
-Fix attempts at increasing past max speed (probably due to ship colission code)
-
-Impliment explosion effect
-
-Replace skybox with a self made version.
-
-Fix rolling issues
-
-Impliment a TCAS system for ships.
+Fix rolling issues.
