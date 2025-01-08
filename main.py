@@ -130,7 +130,6 @@ class Program:
         explosionshakeamt = 0
         winconditionrealised = False
 
-        print(progvar.MODELDATA)
         #Loop
         while not userhasquit:
             #Time
@@ -278,7 +277,6 @@ class Program:
                 pygame.mixer.music.play()
 
                 wincondtext = props.ScreenSpaceLabel("YOU WIN!",(255,255,0),500)
-                print(pygame.font.get_fonts())
                 wincondtext.setpos(glm.translate((0,0,-1)))
                 progvar.ASSETS.append(wincondtext)
             elif len(avaxTeam.getAllMembers()) < 1 and not winconditionrealised:
@@ -292,10 +290,8 @@ class Program:
                 pygame.mixer.music.play()
 
                 wincondtext = props.ScreenSpaceLabel("YOU LOOSE!",(255,0,0),500)
-                print(pygame.font.get_fonts())
                 wincondtext.setpos(glm.translate((0,0,-1)))
                 progvar.ASSETS.append(wincondtext)
-
 
             #This function loops through all of the objects in the progvar.ASSETS list and draws them with their drawObj() function
             pygame.display.flip()
