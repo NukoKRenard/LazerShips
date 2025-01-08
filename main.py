@@ -17,7 +17,6 @@ import internal.props as props
 import internal.actors as actors
 import internal.methods as datatypes
 
-
 class Program:
     def __init__(self):
 
@@ -25,13 +24,12 @@ class Program:
         #Display
         #Creates the pygame window.
         screen = pygame.display.set_mode((0,0), pygame.OPENGL | pygame.DOUBLEBUF | pygame.FULLSCREEN)
-
-
         cameraoffset = glm.translate((0,7,-15))
-        #Creates a camera actor, and tells it to draw directly to the pygame window. (Setting rendertarget to 0 means it will draw directly to the screen instead of a texture.)
-        progvar.CAMERA = camera.ShipCamera(90,screen.get_size(),rendertarget=0,offset=cameraoffset)
 
         # Entities
+        # Creates a camera actor, and tells it to draw directly to the pygame window. (Setting rendertarget to 0 means it will draw directly to the screen instead of a texture.)
+        #Note: At this point the display is already made, we are just creating an entity to render to it.
+        progvar.CAMERA = camera.ShipCamera(90, screen.get_size(), rendertarget=0, offset=cameraoffset)
 
         #The progvar.ASSETS list is used for drawing to the screen. If something needs to be shown on screen it needs to be here.
         progvar.ASSETS = []
@@ -130,6 +128,7 @@ class Program:
         clock = pygame.time.Clock()
         userhasquit = False
         explosionshakeamt = 0
+        winconditionrealised = False
 
         print(progvar.MODELDATA)
         #Loop
@@ -159,8 +158,7 @@ class Program:
                     elif event.key == pygame.K_c:
                         player.targetAttacker()
                     elif event.key == pygame.K_o:
-                        for ship in progvar.SHIPS:
-                            if ship != player:
+                        for ship in avaxTeam.getAllMembers():
                                 ship.damage(1)
                 if event.type == pygame.MOUSEWHEEL:
                     playerthrottle += event.y*(1/60)
@@ -203,26 +201,27 @@ class Program:
                     player.heal(-1)
                     player.disableAI()
             #Refresh
-            playertarget = player.getTarget()
-            if player and playertarget:
-                targetloc = progvar.CAMERA.getPerspectiveMatrix() * progvar.CAMERA.getWorldMatrix() * playertarget.getPos() * glm.vec4(0, 0, 0, 1)
-                targetloc = targetloc/targetloc.w
 
-                targetloc.x = targetloc.x if abs(targetloc.x) <= 1 else targetloc.x/abs(targetloc.x)
-                targetloc.x *= progvar.CAMERA.getAspectRatio()
-                targetloc.y = targetloc.y if abs(targetloc.y) <= 1 else targetloc.y/abs(targetloc.y)
-                crosshair.setpos(glm.translate((targetloc.x,targetloc.y,-1)))
+            if player:
+                playertarget = player.getTarget()
+                if playertarget:
+                    targetloc = progvar.CAMERA.getPerspectiveMatrix() * progvar.CAMERA.getWorldMatrix() * playertarget.getPos() * glm.vec4(0, 0, 0, 1)
+                    targetloc = targetloc/targetloc.w
 
-                if player.isLocked():
-                    if crosshair.getImage() != crosshairenabled:
-                        crosshair.changeImage(crosshairenabled)
+                    targetloc.x = targetloc.x if abs(targetloc.x) <= 1 else targetloc.x/abs(targetloc.x)
+                    targetloc.x *= progvar.CAMERA.getAspectRatio()
+                    targetloc.y = targetloc.y if abs(targetloc.y) <= 1 else targetloc.y/abs(targetloc.y)
+                    crosshair.setpos(glm.translate((targetloc.x,targetloc.y,-1)))
+                    if player.isLocked():
+                        if crosshair.getImage() != crosshairenabled:
+                            crosshair.changeImage(crosshairenabled)
 
-                elif player.getTargetDot() >= 0:
-                    if crosshair.getImage() != crosshairdisabled:
-                        crosshair.changeImage(crosshairdisabled)
+                    elif player.getTargetDot() >= 0:
+                        if crosshair.getImage() != crosshairdisabled:
+                            crosshair.changeImage(crosshairdisabled)
 
-                elif crosshair.getImage() != crosshairreversed:
-                    crosshair.changeImage(crosshairreversed)
+                    elif crosshair.getImage() != crosshairreversed:
+                        crosshair.changeImage(crosshairreversed)
 
             for ship in progvar.SHIPS:
                 if ship.getVelocity().z > ship.getMaxSpeed():
@@ -256,7 +255,7 @@ class Program:
                 if issubclass(type(asset),actors.Actor):
                     asset.update()
 
-                if isinstance(asset,actors.ExplosionEffect):
+                if isinstance(asset,actors.ExplosionEffect) and player:
                     if glm.distance(player.getPos()*glm.vec4(0,0,0,1),asset.getPos()*glm.vec4(0,0,0,1)):
                         explosionshakeamt += (asset.getShockwaveScale()/glm.distance(player.getPos()*glm.vec4(0,0,0,1),asset.getPos()*glm.vec4(0,0,0,1)))*.001
 
@@ -266,6 +265,37 @@ class Program:
             explosionshakeamt = explosionshakeamt if explosionshakeamt < 0.1 else 0.1
 
             progvar.CAMERA.setPostProssShake(explosionshakeamt*.1)
+
+            #Checks loose and win conditions every frame. If one is met it sets the condition.
+            if len(tx01Team.getAllMembers()) < 1 and not winconditionrealised:
+                winconditionrealised = True
+
+                for asset in progvar.ASSETS:
+                    if isinstance(asset,actors.sfx3D):
+                        asset.stop()
+
+                pygame.mixer.music.load("sfx/SongWin.mp3")
+                pygame.mixer.music.play()
+
+                wincondtext = props.ScreenSpaceLabel("YOU WIN!",(255,255,0),500)
+                print(pygame.font.get_fonts())
+                wincondtext.setpos(glm.translate((0,0,-1)))
+                progvar.ASSETS.append(wincondtext)
+            elif len(avaxTeam.getAllMembers()) < 1 and not winconditionrealised:
+                winconditionrealised = True
+
+                for asset in progvar.ASSETS:
+                    if isinstance(asset,actors.sfx3D):
+                        asset.stop()
+
+                pygame.mixer.music.load("sfx/SongLoss.mp3")
+                pygame.mixer.music.play()
+
+                wincondtext = props.ScreenSpaceLabel("YOU LOOSE!",(255,0,0),500)
+                print(pygame.font.get_fonts())
+                wincondtext.setpos(glm.translate((0,0,-1)))
+                progvar.ASSETS.append(wincondtext)
+
 
             #This function loops through all of the objects in the progvar.ASSETS list and draws them with their drawObj() function
             pygame.display.flip()

@@ -551,7 +551,7 @@ class sfx3D(Actor):
         playerdist = glm.distance((worldpos*glm.vec4(0,0,0,1)).xyz,(progvar.CAMERA.getPos()*glm.vec4(0,0,0,1)).xyz)
         playerdist = playerdist if playerdist != 0 else 1
 
-        self.__sfx.set_volume(50/playerdist)
+        self.__sfx.set_volume(50/(playerdist))
 
     def play(self, repeats : int = 0):
         if self.__sfxchannel:

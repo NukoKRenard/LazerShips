@@ -5,6 +5,7 @@ This file contains datatypes for the game. These datatypes have no physical repr
 
 import random
 import glm
+import pygame
 
 import internal.globalvariables as progvar
 

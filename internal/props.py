@@ -600,7 +600,9 @@ class ScreenSpaceSprite(Prop):
         glUniform1i(glGetUniformLocation(shaderlist[3], "image"), 0)
 
         # Draws the prop to the screen.
+        glDepthMask(False)
         glDrawElements(GL_TRIANGLES, len(self.__indexdata), GL_UNSIGNED_INT, None)
+        glDepthMask(True)
 
     def changeImage(self, imagedata : pygame.surface.Surface) -> None:
         self.__rect = imagedata.get_rect()
@@ -633,7 +635,7 @@ class ScreenSpaceSprite(Prop):
         glBindTexture(GL_TEXTURE_2D, self.__texture)
 
 class ScreenSpaceLabel(ScreenSpaceSprite):
-    def __init__(self,text : str,color : tuple[int,int,int] = (255,255,255),size : int =30,font : str="Arial"):
+    def __init__(self,text : str,color : tuple[int,int,int] = (255,255,255),size : int =30,font : str="bahnschrift"):
         self.__font = pygame.font.SysFont(font,size)
         self.__color = color
         self.__image = self.__font.render(text,1,self.__color)
