@@ -1,4 +1,5 @@
 """
+Skyler O'Bonsawin
 10/27/2024
 This file contains datatypes for the game. These datatypes have no physical representation, they are just used to grab objects.
 """

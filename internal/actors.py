@@ -1,4 +1,5 @@
 """
+Skyler O'Bonsawin
 10/26/2024
 This file holds code for actors. Each actor holds a prop (called a costume) which is what is rendered to the screen.
 Actors are dynamic with behaviors. Like a starship with an AI pilot, or a game object,
@@ -516,7 +517,7 @@ class ExplosionEffect(Actor):
         self.__shockwave.setpos(position)
         self.addCostume(self.__shockwave)
 
-        self.__sound = sfx3D(loadedsfx.explosion)
+        self.__sound = sfx3D(pygame.mixer.Sound(loadedsfx.explosion))
         self.addCostume(self.__sound)
 
         self.setpos(position)

@@ -1,5 +1,6 @@
 """
-10/26/2024
+Skyler O'Bonsawin
+1/10/2025
 This file holds code for the rendering pipeline. All of this code is abstracted to a camera object to make drawing the scene easier.
 """
 
@@ -80,7 +81,6 @@ class Camera(Actor):
         self.skyboxShader = loadShaderProgram("shaders/skyboxVertex.glsl", "shaders/skyboxFragment.glsl")
         self.lazerShader = loadShaderProgram("shaders/lazerVertex.glsl", "shaders/lazerFragment.glsl")
         self.spriteShader = loadShaderProgram("shaders/screenSpaceSpriteVertex.glsl", "shaders/screenSpaceSpriteFragment.glsl")
-        self.sparkShader = loadShaderProgram("shaders/sparkVertex.glsl","shaders/sparkFragment.glsl")
 
         #A special shaderprogram that uses the screen's image and manipulates it to post processing affect.
         self.postProcessingShader = loadShaderProgram("shaders/postProcessingVertex.glsl","shaders/postProcessingFragment.glsl")
@@ -118,8 +118,6 @@ class Camera(Actor):
         glEnable(GL_DEPTH_TEST)
         glDepthFunc(GL_LESS)
 
-        self.__lastVAO = 0
-
     def render(self) -> None:
         #Rencers the scene to the pre processing buffer
         glBindFramebuffer(GL_FRAMEBUFFER, self.preProcessBuffer)
@@ -129,7 +127,7 @@ class Camera(Actor):
         for object in progvar.ASSETS:
             if object not in self.getCostumes():
                 object.drawObj(self.worldMatrix,self.perspectiveMatrix,
-                        (self.starshipShader,self.skyboxShader,self.lazerShader,self.spriteShader,self.sparkShader),
+                        (self.starshipShader,self.skyboxShader,self.lazerShader,self.spriteShader),
                         self
                         )
 
@@ -168,35 +166,13 @@ class Camera(Actor):
 
         # Draws the new image to the screen.
         glDrawArrays(GL_QUADS,0,4)
-    def getLastVAO(self):
-        return self.__lastVAO
 
     def getScreenDimensions(self) -> tuple[int,int]:
         return self.__screensize
 
-    #Calculates camera movement, Very crude as of right now
+    #Renderes to the camera's view object when called.
     def update(self) -> None:
         self.render()
-        if pygame.mouse.get_pos() != (0,0) and pygame.mouse.get_pos() != (self.__screensize[0] // 2, self.__screensize[1] // 2):
-            mx, my = ((pygame.mouse.get_pos()[0] / self.__screensize[0]) - .5) * 2, ((pygame.mouse.get_pos()[1] / self.__screensize[1]) - .5) * 2
-            self.mx += mx
-            self.my += my
-            pygame.mouse.set_pos((self.__screensize[0] // 2, self.__screensize[1] // 2))
-            self.direction = glm.vec4(0,0,1,0)*glm.rotate(self.my/10,(-1,0,0))
-            self.direction *= glm.rotate(self.mx/10,(0,1,0))
-
-        if pygame.key.get_pressed()[pygame.K_w]:
-            self.position.z += 1/30*progvar.DELTATIME
-        if pygame.key.get_pressed()[pygame.K_s]:
-            self.position.z -= 1/30*progvar.DELTATIME
-        if pygame.key.get_pressed()[pygame.K_a]:
-            self.position.x += 1/30*progvar.DELTATIME
-        if pygame.key.get_pressed()[pygame.K_d]:
-            self.position.x -= 1/30*progvar.DELTATIME
-        if pygame.key.get_pressed()[pygame.K_LSHIFT]:
-            self.position.y += 1/30*progvar.DELTATIME
-        if pygame.key.get_pressed()[pygame.K_LCTRL]:
-            self.position.y -= 1 / 30 * progvar.DELTATIME
 
     def getPerspectiveMatrix(self) -> glm.mat4:
         return self.perspectiveMatrix

@@ -1,4 +1,5 @@
 """
+Skyler O'Bonsawin
 10/19/2024
 This file is the entry point of the program. It holds the Program() class which is how the game is run.
 """
@@ -33,6 +34,7 @@ class Program:
 
         #The progvar.ASSETS list is used for drawing to the screen. If something needs to be shown on screen it needs to be here.
         progvar.ASSETS = []
+
         #The progvar.SHIPS list is used for detecting colissions. It is faster to use a seperate list than to check every item in the draw list.
         progvar.SHIPS = []
 

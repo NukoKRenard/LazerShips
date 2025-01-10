@@ -1,4 +1,5 @@
 """
+Skyler O'Bonsawin
 10/26/2024
 This file holds code for props that can be drawn to a scene. Props are static objects with no behavior.
 They can move and rotate, but have no way of doing this on their own and it can only be done through a external function.
@@ -57,8 +58,8 @@ class Prop:
     def getMatrix(self) -> glm.mat4:
         return self.__translation * self.__rotation * self.__scale
 
-#A C style function that reads a .obj file's model data and puts the vertex and index data into two given lists.
-def readModel(pathtomodel, vertexdata, indexdata):
+#A function that reads a .obj file's model data and puts the vertex and index data into two given lists.
+def readModel(pathtomodel, vertexdata, indexdata) -> int:
     # The following code is to parse the file into a program useable format.
     # Temporary lists that hold different vertex attributes. These will be moved into the vertexdata list when the indexdata is read.
     vertpos = []
@@ -183,7 +184,7 @@ class Model(Prop):
             glGenerateMipmap(GL_TEXTURE_2D)
             progvar.MODELDATA[ColourMapPath] = self.__texture
 
-        # This is a check to see if the texture file was already loaded. If it is then there is no reason to load it again, so the file will just copy the preloaded one.
+        # This is a check to see if the glow texture file was already loaded. If it is then there is no reason to load it again, so the file will just copy the preloaded one.
         if GlowMapPath in progvar.MODELDATA:
             self.__glow = progvar.MODELDATA[GlowMapPath]
         else:
@@ -202,7 +203,7 @@ class Model(Prop):
             glGenerateMipmap(GL_TEXTURE_2D)
             progvar.MODELDATA[GlowMapPath] = self.__glow
 
-        #This performs a check to see if the model is already loaded. If it is then it will just use that data. Otherwise it will load the model itself.
+        #This performs a check to see if the model data is already loaded. If it is then it will just use that data. Otherwise it will load the model itself.
         if ObjFilePath+str(shaderID) in progvar.MODELDATA:
             self.__vbo = progvar.MODELDATA[ObjFilePath+str(shaderID)+"vbo"]
             self.__ebo = progvar.MODELDATA[ObjFilePath + str(shaderID)+"ebo"]
@@ -231,7 +232,7 @@ class Model(Prop):
 
 
 
-    #Draws the object to the screen. This similar to the pygame sprite's draw function.
+    #Draws the object to the screen. This similar a the pygame sprite's draw function.
     def drawObj(self,worldMatrix : glm.mat4,perspectiveMatrix : glm.mat4,
                 shaderlist : list[int],
                 camera,
@@ -312,12 +313,8 @@ class Model(Prop):
         glActiveTexture(GL_TEXTURE1)
         glBindTexture(GL_TEXTURE_2D, self.__glow)
 
-    def setopacity(self,value : float):
-        value = (value if value > 0 else 0) if value < 1 else 1
-
-        self.__opacity = value
-
-    def setopacity(self,value : float):
+    #Sets the opacity of the model.
+    def setopacity(self,value : float) -> None:
         value = (value if value > 0 else 0) if value < 1 else 1
 
         self.__opacity = value
@@ -327,6 +324,7 @@ class Skybox(Prop):
     def __init__(self, texturepath : str):
         Prop.__init__(self)
 
+        #Checks if the skybox's box model has been loaded.
         if False and "skyboxmodel-vbo" in progvar.MODELDATA:
             self.__vbo = progvar.MODELDATA["skyboxmodel-vbo"]
             self.__ebo = progvar.MODELDATA["skyboxmodel-ebo"]

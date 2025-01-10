@@ -45,8 +45,9 @@ if %ERRORLEVEL% NEQ 0 (
                 )
 
                 echo test passed.
+                goto retry
             )
         )
-        goto retry
+        exit
 )
 
