@@ -222,6 +222,7 @@ class StarShipTemplate(Actor):
             if ship.getTarget() == self:
                 ship.switchtarget(1)
 
+#This is the ship class that all of the ships use
 class AIShip(StarShipTemplate):
     def __init__(self,shipmodel,Name : str,team : datatypes.Team):
         StarShipTemplate.__init__(self,shipmodel)
@@ -357,7 +358,7 @@ class AIShip(StarShipTemplate):
 
         self.__velocityLastFrame = self.getThrottleSpeed()
 
-    def goToPos(self, pos):
+    def goToPos(self, pos : glm.vec3):
         if self.__AI:
             relativepos = glm.vec4((glm.inverse(self.getPos())*glm.vec4(pos,1)).xyz,0)
             localdir = glm.normalize(glm.inverse(self.getRot())*relativepos)
@@ -389,7 +390,7 @@ class AIShip(StarShipTemplate):
 
         else:
             self.__target = self.__team.getRandomEnemy()
-    def setTarget(self, target) -> None:
+    def setTarget(self, target : Actor) -> None:
         if target:
             self.__target = target
     def getTarget(self) -> Actor:
@@ -427,7 +428,7 @@ class AIShip(StarShipTemplate):
             self.__team.notifyOfDistress(self)
             self.__distressUsed = True
         return False
-    def targetAttacker(self):
+    def targetAttacker(self) -> None:
         if self.__lastAttacker in progvar.SHIPS:
             self.__target = self.__lastAttacker
         else:
@@ -443,7 +444,7 @@ class AIShip(StarShipTemplate):
         return self.__enemyDot
     def getName(self) -> str:
         return self.__name
-    def getAI(self):
+    def getAI(self) -> bool:
         return self.__AI
 
 class Asteroid(Actor):
@@ -460,6 +461,7 @@ class Asteroid(Actor):
         Actor.update(self,parentMatrix)
         self.rotate(self.__movedir)
 
+#This is the healthbar that appears on the screen.
 class healthBar(Actor):
    def __init__(self, color : tuple[int,int,int] = (0,200,200), ship : AIShip = None):
        self.__target = ship
@@ -501,6 +503,7 @@ class healthBar(Actor):
 
                self.__sprite.changeImage(self.__image)
 
+#This is the shockwave that is spawned when a ship dies
 class ExplosionEffect(Actor):
     def __init__(self,position : glm.mat4, rotation : glm.mat4, scale : glm.mat4, lifetime : float =30):
         Actor.__init__(self, [])
@@ -523,7 +526,7 @@ class ExplosionEffect(Actor):
         self.setpos(position)
         self.__sound.play()
 
-    def update(self, parentMatrix : glm.mat4 = glm.mat4(1)):
+    def update(self, parentMatrix : glm.mat4 = glm.mat4(1)) -> None:
         Actor.update(self, parentMatrix*self.getPos())
 
         timesincebegin = (pygame.time.get_ticks()-self.__starttime)/60
@@ -537,6 +540,7 @@ class ExplosionEffect(Actor):
     def getShockwaveScale(self) -> float:
         return glm.length(self.__shockwave.getScale()*glm.vec4(1,1,1,0))/3
 
+#A sound effect actor which adjusts its volume with distance.
 class sfx3D(Actor):
     def __init__(self,sound : pygame.mixer.Sound):
         self.__sfx = sound
@@ -554,18 +558,18 @@ class sfx3D(Actor):
 
         self.__sfx.set_volume(50/(playerdist))
 
-    def play(self, repeats : int = 0):
+    def play(self, repeats : int = 0) -> None:
         if self.__sfxchannel:
             if self.__sfxchannel.get_busy():
                 self.__sfxchannel = self.__sfx.play(loops=repeats)
         else:
             self.__sfxchannel = self.__sfx.play(loops=repeats)
 
-    def stop(self):
+    def stop(self) -> None:
         self.__sfxchannel = None
         self.__sfx.stop()
 
-    def isPlaying(self):
+    def isPlaying(self) -> bool:
         if self.__sfxchannel:
             return self.__sfxchannel.get_busy()
         else:

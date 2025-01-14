@@ -176,9 +176,11 @@ class Camera(Actor):
 
     def getPerspectiveMatrix(self) -> glm.mat4:
         return self.perspectiveMatrix
+
     def getWorldMatrix(self) -> glm.mat4:
         return self.worldMatrix
 
+    #Sets the image's grayscale amount.
     def setPostProssGreyscale(self,value : float) -> None:
         if value > 1:
             value = 1
@@ -186,6 +188,7 @@ class Camera(Actor):
             value = 0
         self.__greyscale = value
 
+    #Sets the camera shake amount.
     def setPostProssShake(self,value : float) -> None:
         if value > 1:
             value = 1
@@ -195,8 +198,9 @@ class Camera(Actor):
     def getAspectRatio(self) -> float:
         return self.getScreenDimensions()[0]/self.getScreenDimensions()[1]
 
+#A special camera object that follows the given ships.
 class ShipCamera(Camera):
-    def __init__(self,fovy : int,screenwh : tuple[int,int],rendertarget : int =0,parentship : StarShipTemplate | None =None,offset : glm.mat4 = glm.mat4(1)):
+    def __init__(self,fovy : int,screenwh : tuple[int,int],rendertarget : int=0,parentship : StarShipTemplate | None =None,offset : glm.mat4 = glm.mat4(1)):
         Camera.__init__(self,fovy,screenwh,rendertarget)
         self.__parentship = parentship
         self.__offset = offset
