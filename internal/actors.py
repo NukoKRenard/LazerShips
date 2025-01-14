@@ -88,7 +88,7 @@ class StarShipTemplate(Actor):
     def __init__(self,
                  starshipCostumes,
                  minSpeed : float =0 ,
-                 maxSpeed : float =3 ,
+                 maxSpeed : float =6 ,
                  maxrotatespeed : float= 1/9,
                  maxhealth : float =1
     ):
@@ -343,13 +343,13 @@ class AIShip(StarShipTemplate):
 
         velocitychange = self.getThrottleSpeed() - self.__velocityLastFrame
 
-        if velocitychange > 0.005:
+        if velocitychange > 0.05:
             for engineSound in self.__Sfx:
                 if engineSound != self.__Sfx[0]:
                     engineSound.stop()
                 else:
                     engineSound.play()
-        elif velocitychange < -0.005:
+        elif velocitychange < -0.05:
             for engineSound in self.__Sfx:
                 if engineSound != self.__Sfx[1]:
                     engineSound.stop()
