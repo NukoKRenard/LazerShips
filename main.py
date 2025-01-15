@@ -66,21 +66,17 @@ class Program:
         #Adds the camera to the assets list (They are treated the same as actors in game code and need to be updated in order to render.)
         progvar.ASSETS.append(progvar.CAMERA)
 
-        blueteam_ship = props.Model("levelobjects/AvaxShip.obj",
-                                    "levelobjects/texturedata/AvaxShipBase.png",
-                                    "levelobjects/texturedata/AvaxShipGlowMap.png")
-
-        redteam_ship = props.Model("levelobjects/Starship.obj",
-                                   "levelobjects/texturedata/StarshipColourMapRed.png",
-                                   "levelobjects/texturedata/StarshipRoughnessGlowmap.png")
-
         #Adds a number of ships for each team
         for i in range(20):
-            ship = actors.AIShip([copy.deepcopy(blueteam_ship)],str(i)+"avax",avaxTeam)
+            ship = actors.AIShip([props.Model("levelobjects/AvaxShip.obj",
+                                    "levelobjects/texturedata/AvaxShipBase.png",
+                                    "levelobjects/texturedata/AvaxShipGlowMap.png")],str(i)+"avax",avaxTeam)
             avaxTeam.addToTeam(ship)
             progvar.ASSETS.append(ship)
         for i in range(20):
-            ship = actors.AIShip([copy.deepcopy(redteam_ship)],str(i)+"tx01",tx01Team)
+            ship = actors.AIShip([props.Model("levelobjects/Starship.obj",
+                                   "levelobjects/texturedata/StarshipColourMapRed.png",
+                                   "levelobjects/texturedata/StarshipRoughnessGlowmap.png")],str(i)+"tx01",tx01Team)
             tx01Team.addToTeam(ship)
             progvar.ASSETS.append(ship)
 
@@ -115,14 +111,13 @@ class Program:
         crosshair.setScale(glm.scale((.1,.1,.1)))
 
         #Adds the text showing the player count per team
-        avaxcount = props.ScreenSpaceLabel(str(len(avaxTeam.getAllMembers())),size=100,color=(0,0,200))
+        avaxcount = props.ScreenSpaceLabel(str(len(avaxTeam.getAllMembers())),size=100,color=(0,200,200))
         avaxcount.setpos(glm.translate((.5,.5,-1.0)))
         progvar.ASSETS.append(avaxcount)
 
-        tx01count = props.ScreenSpaceLabel(str(len(tx01Team.getAllMembers())),size=100,color=(200,0,0))
+        tx01count = props.ScreenSpaceLabel(str(len(tx01Team.getAllMembers())),size=100,color=(200,200,0))
         tx01count.setpos(glm.translate((-.5, .5, -1.0)))
         progvar.ASSETS.append(tx01count)
-
 
         #Action
         #Assign key variables
@@ -265,6 +260,11 @@ class Program:
             explosionshakeamt = explosionshakeamt if explosionshakeamt < 0.1 else 0.1
 
             progvar.CAMERA.setPostProssShake(explosionshakeamt*.1)
+
+            if pygame.key.get_pressed()[pygame.K_o]:
+                ship = tx01Team.getRandomMember()
+                if ship:
+                    ship.damage(1)
 
             #Checks loose and win conditions every frame. If one is met it sets the condition.
             if len(tx01Team.getAllMembers()) < 1 and not winconditionrealised:

@@ -249,7 +249,12 @@ class Model(Prop):
         else:
             objscreenspace = glm.vec4(0,0,0,0)
 
+
+
         #This finds the new scaled radius of the object
+
+        if objscreenspace.w == 0:
+            objscreenspace.w = 1
         cullsize = (self.__radius*self.__radiusscale/objscreenspace.w)
 
         #This if statement will only draw the object if it is visible on screen.

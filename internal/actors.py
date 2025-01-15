@@ -307,9 +307,8 @@ class AIShip(StarShipTemplate):
                 for asteroid in progvar.ASTEROIDS:
                     if asteroid.getPos() != self.getPos():
                         itemdist = glm.distance((asteroid.getPos()*glm.vec4(0,0,0,1)).xyz,(self.getPos()*glm.vec4(0,0,0,1)).xyz)
-                        if itemdist < (20 if not self.__AI else 5):
+                        if itemdist < (30 if not self.__AI else 5):
                             self.damage(self.getMaxHealth())
-                            ship.damage(ship.getMaxHealth())
                             break
 
                         elif itemdist < 1000:
@@ -465,6 +464,7 @@ class Asteroid(Actor):
 class healthBar(Actor):
    def __init__(self, color : tuple[int,int,int] = (0,200,200), ship : AIShip = None):
        self.__target = ship
+       self.__lftarget = ship
 
        self.__color = color
        self.__image = pygame.surface.Surface((1000,100))
@@ -490,7 +490,7 @@ class healthBar(Actor):
 
        if self.__target:
            health = self.__target.getHealth()
-           if health != self.__lastframehealth:
+           if health != self.__lastframehealth or self.__lftarget != self.__target:
                self.__lastframehealth = health
 
                self.__image.fill((0,0,0))
