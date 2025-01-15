@@ -244,7 +244,10 @@ class Model(Prop):
 
         #This gets the objects position on the screen.
         objscreenspace = (perspectiveMatrix * worldMatrix * parentMatrix * self.getPos() * glm.vec4(0, 0, 0, 1))
-        objscreenspace /= objscreenspace.w
+        if objscreenspace.w != 0:
+            objscreenspace /= objscreenspace.w
+        else:
+            objscreenspace = glm.vec4(0,0,0,0)
 
         #This finds the new scaled radius of the object
         cullsize = (self.__radius*self.__radiusscale/objscreenspace.w)
@@ -598,9 +601,9 @@ class ScreenSpaceSprite(Prop):
         glUniform1i(glGetUniformLocation(shaderlist[3], "image"), 0)
 
         # Draws the prop to the screen.
-        glDepthMask(False)
+        glDepthMask(GL_FALSE)
         glDrawElements(GL_TRIANGLES, len(self.__indexdata), GL_UNSIGNED_INT, None)
-        glDepthMask(True)
+        glDepthMask(GL_TRUE)
 
     def changeImage(self, imagedata : pygame.surface.Surface) -> None:
         self.__rect = imagedata.get_rect()

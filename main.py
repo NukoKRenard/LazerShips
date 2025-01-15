@@ -26,6 +26,7 @@ class Program:
         #Creates the pygame window.
         screen = pygame.display.set_mode((0,0), pygame.OPENGL | pygame.DOUBLEBUF | pygame.FULLSCREEN)
         cameraoffset = glm.translate((0,7,-15))
+        pygame.mouse.set_visible(False)
 
         # Entities
         # Creates a camera actor, and tells it to draw directly to the pygame window. (Setting rendertarget to 0 means it will draw directly to the screen instead of a texture.)
@@ -158,9 +159,6 @@ class Program:
                         player.switchtarget(-1)
                     elif event.key == pygame.K_c:
                         player.targetAttacker()
-                    elif event.key == pygame.K_o:
-                        for ship in avaxTeam.getAllMembers():
-                                ship.damage(1)
                 if event.type == pygame.MOUSEWHEEL:
                     playerthrottle += event.y*(1/60)
                     playerthrottle += event.y*(1/60)
@@ -272,10 +270,6 @@ class Program:
             if len(tx01Team.getAllMembers()) < 1 and not winconditionrealised:
                 winconditionrealised = True
 
-                for asset in progvar.ASSETS:
-                    if isinstance(asset,actors.sfx3D):
-                        asset.stop()
-
                 pygame.mixer.music.load("sfx/SongWin.mp3")
                 pygame.mixer.music.play()
 
@@ -284,10 +278,6 @@ class Program:
                 progvar.ASSETS.append(wincondtext)
             elif len(avaxTeam.getAllMembers()) < 1 and not winconditionrealised:
                 winconditionrealised = True
-
-                for asset in progvar.ASSETS:
-                    if isinstance(asset,actors.sfx3D):
-                        asset.stop()
 
                 pygame.mixer.music.load("sfx/SongLoss.mp3")
                 pygame.mixer.music.play()
