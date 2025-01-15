@@ -70,16 +70,15 @@ class Program:
         for i in range(20):
             ship = actors.AIShip([props.Model("levelobjects/AvaxShip.obj",
                                     "levelobjects/texturedata/AvaxShipBase.png",
-                                    "levelobjects/texturedata/AvaxShipGlowMap.png")],str(i)+"avax",avaxTeam)
+                                     "levelobjects/texturedata/AvaxShipGlowMap.png")],str(i)+"avax",avaxTeam)
             avaxTeam.addToTeam(ship)
             progvar.ASSETS.append(ship)
         for i in range(20):
             ship = actors.AIShip([props.Model("levelobjects/Starship.obj",
-                                   "levelobjects/texturedata/StarshipColourMapRed.png",
-                                   "levelobjects/texturedata/StarshipRoughnessGlowmap.png")],str(i)+"tx01",tx01Team)
+                                    "levelobjects/texturedata/StarshipColourMapRed.png",
+                                     "levelobjects/texturedata/StarshipRoughnessGlowmap.png")],str(i)+"tx01",tx01Team)
             tx01Team.addToTeam(ship)
             progvar.ASSETS.append(ship)
-
 
         # This checks all of the assets in the progvar.ASSETS list, and if it is a ship type it adds them to the progvar.SHIPS list
         for asset in progvar.ASSETS:
@@ -253,18 +252,12 @@ class Program:
                     if glm.distance(player.getPos()*glm.vec4(0,0,0,1),asset.getPos()*glm.vec4(0,0,0,1)):
                         explosionshakeamt += (asset.getShockwaveScale()/glm.distance(player.getPos()*glm.vec4(0,0,0,1),asset.getPos()*glm.vec4(0,0,0,1)))*.00
 
-
             progvar.PLAYER = player
 
             explosionshakeamt -= .002 if explosionshakeamt > .002 else -explosionshakeamt
             explosionshakeamt = explosionshakeamt if explosionshakeamt < 0.1 else 0.1
 
             progvar.CAMERA.setPostProssShake(explosionshakeamt*.1)
-
-            if pygame.key.get_pressed()[pygame.K_o]:
-                ship = tx01Team.getRandomMember()
-                if ship:
-                    ship.damage(1)
 
             #Checks loose and win conditions every frame. If one is met it sets the condition.
             if len(tx01Team.getAllMembers()) < 1 and not winconditionrealised:
