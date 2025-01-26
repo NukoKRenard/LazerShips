@@ -14,10 +14,18 @@ Please ensure a python 3 interpreter is present on the computer and is a part of
 * pyopengl
 * pygame
 
+## Running the game (Linux & MacOS)
+If you want to run the game on Linux or MacOS then you will have to install python3 and all of the dependancies (listed above) manually.
+
 To install python packages manually, use the terminal with the command:
 ```pip install <package-name>```
 or
 ```python -m pip install <package-name>```
+
+After installing everyting, open the terminal, set the common directory as the folder where the main.py script is located and then run the script using the python exe in that same terminal window.
+```
+cd <Path to the game's folder>
+python main.py```
 
 ## Controlls:
 
