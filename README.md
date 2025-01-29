@@ -23,9 +23,8 @@ or
 ```python -m pip install <package-name>```
 
 After installing everyting, open the terminal, set the common directory as the folder where the main.py script is located and then run the script using the python exe in that same terminal window.
-```
-cd <Path to the game's folder>
-python main.py```
+```cd <Path to the game's folder> ```
+```python main.py```
 
 ## Controlls:
 
